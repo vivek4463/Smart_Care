@@ -119,7 +119,7 @@ export default function DashboardPage() {
                         title="Session History"
                         description="Review past sessions and progress"
                         gradient="from-orange-500 to-yellow-500"
-                        onClick={() => { }}
+                        onClick={() => router.push('/history')}
                         small
                     />
 
@@ -128,7 +128,13 @@ export default function DashboardPage() {
                         title="Voice Assistant"
                         description="Chat with your AI wellness guide"
                         gradient="from-pink-500 to-rose-500"
-                        onClick={() => { }}
+                        onClick={() => {
+                            // Trigger voice assistant by clicking the floating button
+                            const voiceButton = document.querySelector('[data-voice-assistant-trigger]');
+                            if (voiceButton instanceof HTMLElement) {
+                                voiceButton.click();
+                            }
+                        }}
                         small
                     />
 
@@ -137,7 +143,7 @@ export default function DashboardPage() {
                         title="Preferences"
                         description="Customize your experience"
                         gradient="from-indigo-500 to-purple-500"
-                        onClick={() => { }}
+                        onClick={() => router.push('/preferences')}
                         small
                     />
                 </motion.div>

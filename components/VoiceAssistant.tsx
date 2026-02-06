@@ -71,6 +71,7 @@ export default function VoiceAssistant() {
             {/* Floating Button */}
             <motion.button
                 onClick={() => setIsOpen(!isOpen)}
+                data-voice-assistant-trigger
                 className="fixed bottom-8 right-8 z-50 w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/50 flex items-center justify-center"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
