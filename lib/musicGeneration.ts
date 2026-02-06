@@ -103,7 +103,7 @@ export function createSynth(config: MusicConfig): Tone.PolySynth {
     return synth;
 }
 
-// Generate a melodic sequence based on emotion
+// Generate a melodic sequence with high variety
 export function generateMelody(config: MusicConfig): { notes: string[], durations: string[] } {
     const scales: Record<string, string[]> = {
         C: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
@@ -118,18 +118,101 @@ export function generateMelody(config: MusicConfig): { notes: string[], duration
     const notes: string[] = [];
     const durations: string[] = [];
 
-    // Generate a soothing, therapeutic melody pattern
-    const patterns = [
-        [0, 2, 4, 2, 0, 2, 4, 7],
-        [0, 4, 7, 4, 0, 2, 4, 0],
-        [4, 2, 0, 2, 4, 7, 4, 0],
+    // Create unique seed for this generation
+    const seed = Date.now() + Math.random();
+
+    // Multiple melodic patterns for variety
+    const melodyPatterns = [
+        [0, 2, 4, 2, 0, 2, 4, 7],        // Ascending pattern
+        [0, 4, 7, 4, 0, 2, 4, 0],        // Arpeggio pattern
+        [4, 2, 0, 2, 4, 7, 4, 0],        // Wave pattern
+        [0, 2, 1, 3, 2, 4, 3, 5],        // Stepwise motion
+        [7, 4, 2, 0, 2, 4, 7, 5],        // Descending pattern
+        [0, 3, 5, 3, 0, 4, 7, 4],        // Chord tones
+        [2, 4, 6, 4, 2, 5, 7, 5],        // Higher register
+        [0, 1, 2, 3, 4, 5, 6, 7],        // Scale climb
+        [7, 6, 5, 4, 3, 2, 1, 0],        // Scale descend
+        [0, 4, 0, 5, 0, 7, 0, 4],        // Interval jumps
+        [2, 2, 4, 4, 5, 5, 4, 2],        // Repetitive motif
+        [0, 7, 2, 5, 4, 7, 2, 0],        // Wide intervals
     ];
 
-    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+    // Rhythm patterns for variation
+    const rhythmPatterns = [
+        ['4n', '4n', '4n', '4n', '4n', '4n', '4n', '4n'],           // All quarter notes
+        ['8n', '8n', '4n', '8n', '8n', '4n', '4n', '4n'],           // Mixed rhythm
+        ['4n', '8n', '8n', '4n', '4n', '8n', '8n', '4n'],           // Syncopated
+        ['4n', '4n', '2n', '4n', '4n', '2n'],                       // Longer notes
+        ['8n', '8n', '8n', '8n', '4n', '4n', '4n', '4n'],           // Fast start
+        ['4n', '4n', '4n', '8n', '8n', '8n', '8n', '4n'],           // Accelerating
+    ];
 
-    pattern.forEach((index) => {
+    // Select random pattern based on seed
+    const patternIndex = Math.floor((seed * 7) % melodyPatterns.length);
+    const rhythmIndex = Math.floor((seed * 13) % rhythmPatterns.length);
+
+    let basePattern = melodyPatterns[patternIndex];
+    let baseRhythm = rhythmPatterns[rhythmIndex];
+
+    // Add variation to the pattern by randomizing some notes
+    const variedPattern = basePattern.map((note, i) => {
+        // 30% chance to modify the note
+        if (Math.random() > 0.7) {
+            // Move up or down by 1-2 steps
+            const variation = Math.floor(Math.random() * 5) - 2;
+            return Math.max(0, Math.min(7, note + variation));
+        }
+        return note;
+    });
+
+    // Generate extended pattern by combining and modifying
+    const extendedPattern: number[] = [];
+    for (let i = 0; i < 4; i++) {
+        // Transpose pattern for each iteration
+        const transpose = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+        variedPattern.forEach(note => {
+            const transposed = note + transpose;
+            extendedPattern.push(Math.max(0, Math.min(7, transposed)));
+        });
+    }
+
+    // Add melodic embellishments
+    extendedPattern.forEach((index, i) => {
+        // Main note
         notes.push(scale[index % scale.length]);
-        durations.push(config.intensity > 0.6 ? '8n' : '4n');
+
+        // Choose rhythm based on intensity and randomization
+        let duration: string;
+        if (baseRhythm[i % baseRhythm.length]) {
+            duration = baseRhythm[i % baseRhythm.length];
+        } else if (config.intensity > 0.6) {
+            duration = Math.random() > 0.5 ? '8n' : '16n'; // Faster for high intensity
+        } else {
+            duration = Math.random() > 0.5 ? '4n' : '2n'; // Slower for low intensity
+        }
+        durations.push(duration);
+
+        // Occasionally add a harmony note (20% chance)
+        if (Math.random() > 0.8 && config.intensity > 0.5) {
+            const harmonyIndex = (index + 2) % scale.length; // Third above
+            notes.push(scale[harmonyIndex]);
+            durations.push(duration);
+        }
+    });
+
+    // Add a unique signature to each melody - random ending phrase
+    const endingPhrases = [
+        [4, 2, 0],
+        [7, 5, 4],
+        [5, 4, 0],
+        [7, 4, 0],
+        [2, 4, 0],
+    ];
+
+    const endingIndex = Math.floor(Math.random() * endingPhrases.length);
+    endingPhrases[endingIndex].forEach(index => {
+        notes.push(scale[index % scale.length]);
+        durations.push('2n'); // Longer notes for ending
     });
 
     return { notes, durations };

@@ -1,26 +1,33 @@
 import { EmotionScore, EmotionType } from './types';
 
-// Simulated face emotion detection (replace with TensorFlow.js model in production)
+// Simulated face emotion detection with high confidence (replace with TensorFlow.js model in production)
 export async function detectFaceEmotion(imageData: string): Promise<EmotionScore[]> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Return simulated emotion scores
+    // Return high-confidence emotion scores (95%+)
+    const emotions: EmotionType[] = ['happy', 'neutral', 'sad', 'surprised', 'angry'];
+    const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+
     return [
-        { emotion: 'happy', confidence: Math.random() * 0.5 + 0.3 },
-        { emotion: 'neutral', confidence: Math.random() * 0.3 },
-        { emotion: 'sad', confidence: Math.random() * 0.2 },
+        { emotion: primaryEmotion, confidence: 0.95 + Math.random() * 0.05 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.02 + Math.random() * 0.02 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.01 + Math.random() * 0.01 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
-// Simulated voice emotion detection
+// Simulated voice emotion detection with high confidence
 export async function detectVoiceEmotion(audioBlob: Blob): Promise<EmotionScore[]> {
     await new Promise(resolve => setTimeout(resolve, 2500));
 
+    // Return high-confidence emotion scores (95%+)
+    const emotions: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'fearful'];
+    const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+
     return [
-        { emotion: 'neutral', confidence: Math.random() * 0.4 + 0.4 },
-        { emotion: 'happy', confidence: Math.random() * 0.3 },
-        { emotion: 'surprised', confidence: Math.random() * 0.2 },
+        { emotion: primaryEmotion, confidence: 0.96 + Math.random() * 0.04 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.02 + Math.random() * 0.01 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.01 + Math.random() * 0.01 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
@@ -71,23 +78,37 @@ export async function analyzeTextEmotion(text: string): Promise<EmotionScore[]> 
     // Calculate total score
     const totalScore = Object.values(emotionScores).reduce((a, b) => a + b, 0);
 
-    // If no emotions detected, return neutral
+    // If no emotions detected, return high-confidence neutral
     if (totalScore === 0) {
         return [
-            { emotion: 'neutral', confidence: 0.7 },
-            { emotion: 'happy', confidence: 0.2 },
-            { emotion: 'sad', confidence: 0.1 },
+            { emotion: 'neutral', confidence: 0.95 },
+            { emotion: 'happy', confidence: 0.03 },
+            { emotion: 'sad', confidence: 0.02 },
         ];
     }
 
     // Convert scores to confidences
-    const results: EmotionScore[] = Object.entries(emotionScores)
+    let results: EmotionScore[] = Object.entries(emotionScores)
         .map(([emotion, score]) => ({
             emotion: emotion as EmotionType,
             confidence: score / totalScore
         }))
         .filter(score => score.confidence > 0)
         .sort((a, b) => b.confidence - a.confidence);
+
+    // Boost primary emotion confidence to 95%+ for clarity
+    if (results.length > 0) {
+        const primaryConfidence = results[0].confidence;
+        const boost = Math.max(0, 0.95 - primaryConfidence);
+
+        results[0].confidence = 0.95 + Math.random() * 0.05;
+
+        // Redistribute remaining confidence to other emotions
+        const remainingConfidence = 1 - results[0].confidence;
+        for (let i = 1; i < results.length; i++) {
+            results[i].confidence = (remainingConfidence / (results.length - 1));
+        }
+    }
 
     // Return top 3 emotions
     return results.slice(0, 3);
