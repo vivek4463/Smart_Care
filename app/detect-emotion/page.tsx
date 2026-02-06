@@ -64,13 +64,47 @@ export default function DetectEmotionPage() {
             emotionData.text
         );
 
-        localStorage.setItem('currentEmotionData', JSON.stringify({
+        const emotionWithTimestamp = {
             ...emotionData,
             aggregated,
             timestamp: new Date(),
-        }));
+        };
+
+        localStorage.setItem('currentEmotionData', JSON.stringify(emotionWithTimestamp));
+
+        // Save to session history
+        saveSession(aggregated, emotionData.heartRate);
 
         router.push('/music');
+    };
+
+    const saveSession = (emotions: EmotionScore[], heartRate?: number) => {
+        // Get existing sessions
+        const storedSessions = localStorage.getItem('sessionHistory');
+        const sessions = storedSessions ? JSON.parse(storedSessions) : [];
+
+        // Get primary emotion
+        const primaryEmotion = emotions && emotions.length > 0 ? emotions[0] : null;
+
+        if (!primaryEmotion) return;
+
+        // Create new session
+        const newSession = {
+            id: `session_${Date.now()}`,
+            date: new Date().toISOString(),
+            emotion: primaryEmotion.emotion,
+            confidence: primaryEmotion.confidence,
+            musicGenerated: false, // Will be updated when music is generated
+            rating: null,
+            heartRate: heartRate,
+        };
+
+        // Add to sessions
+        sessions.push(newSession);
+
+        // Save back to localStorage
+        localStorage.setItem('sessionHistory', JSON.stringify(sessions));
+        localStorage.setItem('currentSessionId', newSession.id); // Store current session ID
     };
 
     return (
@@ -138,10 +172,10 @@ export default function DetectEmotionPage() {
                             >
                                 <div
                                     className={`w-2 h-2 rounded-full ${idx < currentStepIndex
-                                            ? 'bg-green-400'
-                                            : idx === currentStepIndex
-                                                ? 'bg-purple-400 animate-pulse'
-                                                : 'bg-white/20'
+                                        ? 'bg-green-400'
+                                        : idx === currentStepIndex
+                                            ? 'bg-purple-400 animate-pulse'
+                                            : 'bg-white/20'
                                         }`}
                                 />
                                 <span className="hidden md:block">{stepTitles[step]}</span>

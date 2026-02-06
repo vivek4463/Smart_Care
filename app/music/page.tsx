@@ -33,8 +33,27 @@ export default function MusicPage() {
             const generatedMusic = await generateMusic([emotionResult.aggregated]);
             setMusic(generatedMusic);
             setIsGenerating(false);
+
+            // Update session history
+            updateSessionWithMusic();
         }, 3000); // Simulate generation time
     }, [router]);
+
+    const updateSessionWithMusic = () => {
+        const sessionId = localStorage.getItem('currentSessionId');
+        if (!sessionId) return;
+
+        const storedSessions = localStorage.getItem('sessionHistory');
+        if (!storedSessions) return;
+
+        const sessions = JSON.parse(storedSessions);
+        const sessionIndex = sessions.findIndex((s: any) => s.id === sessionId);
+
+        if (sessionIndex !== -1) {
+            sessions[sessionIndex].musicGenerated = true;
+            localStorage.setItem('sessionHistory', JSON.stringify(sessions));
+        }
+    };
 
     const handlePlaybackComplete = () => {
         setPlaybackComplete(true);

@@ -63,7 +63,10 @@ export interface VoiceQuery {
 export interface VoiceResponse {
     text: string;
     audioUrl?: string;
-    action?: string;
+    action?: {
+        type: 'navigation' | 'command';
+        path?: string;
+    };
     timestamp: Date;
 }
 
