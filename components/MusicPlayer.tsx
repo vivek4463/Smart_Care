@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { GeneratedMusic } from '@/lib/types';
+import * as Tone from 'tone';
+import { createSynth, generateMelody } from '@/lib/musicGeneration';
 
 interface MusicPlayerProps {
     music: GeneratedMusic;
@@ -15,16 +17,76 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
     const [progress, setProgress] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
+    const [audioInitialized, setAudioInitialized] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const synthRef = useRef<Tone.PolySynth | null>(null);
+    const loopRef = useRef<Tone.Loop | null>(null);
+    const noteIndexRef = useRef(0);
 
     const duration = music.duration;
 
-    const togglePlay = () => {
-        setIsPlaying(!isPlaying);
+    const initializeAudio = async () => {
+        if (!audioInitialized) {
+            try {
+                await Tone.start();
+                console.log('Tone.js audio context started');
+                setAudioInitialized(true);
+            } catch (error) {
+                console.error('Error starting audio context:', error);
+            }
+        }
+    };
+
+    const togglePlay = async () => {
+        await initializeAudio();
+
+        if (!isPlaying) {
+            // Start playing
+            if (!synthRef.current) {
+                // Create synth and melody
+                synthRef.current = createSynth(music.config);
+                const melody = generateMelody(music.config);
+
+                // Set volume based on mute state
+                if (synthRef.current.volume) {
+                    synthRef.current.volume.value = isMuted ? -Infinity : -10 + (music.config.intensity * 15);
+                }
+
+                // Set tempo
+                Tone.Transport.bpm.value = music.config.tempo;
+
+                const totalNotes = melody.notes.length;
+                noteIndexRef.current = 0;
+
+                // Create the loop
+                loopRef.current = new Tone.Loop((time) => {
+                    const note = melody.notes[noteIndexRef.current % totalNotes];
+                    const noteDuration = melody.durations[noteIndexRef.current % totalNotes];
+
+                    if (synthRef.current) {
+                        synthRef.current.triggerAttackRelease(note, noteDuration, time);
+                    }
+
+                    noteIndexRef.current++;
+                }, '4n');
+
+                loopRef.current.start(0);
+            }
+
+            Tone.Transport.start();
+            setIsPlaying(true);
+        } else {
+            // Pause playing
+            Tone.Transport.pause();
+            setIsPlaying(false);
+        }
     };
 
     const toggleMute = () => {
         setIsMuted(!isMuted);
+        if (synthRef.current && synthRef.current.volume) {
+            synthRef.current.volume.value = !isMuted ? -Infinity : -10 + (music.config.intensity * 15);
+        }
     };
 
     useEffect(() => {
@@ -34,6 +96,7 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
                     const newTime = prev + 0.1;
                     if (newTime >= duration) {
                         setIsPlaying(false);
+                        Tone.Transport.stop();
                         if (onPlaybackComplete) {
                             onPlaybackComplete();
                         }
@@ -59,6 +122,28 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
         };
     }, [isPlaying, duration, onPlaybackComplete]);
 
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (loopRef.current) {
+                loopRef.current.stop();
+                loopRef.current.dispose();
+            }
+            if (synthRef.current) {
+                synthRef.current.dispose();
+            }
+            Tone.Transport.stop();
+            Tone.Transport.cancel();
+        };
+    }, []);
+
+    // Update volume when mute state changes
+    useEffect(() => {
+        if (synthRef.current && synthRef.current.volume) {
+            synthRef.current.volume.value = isMuted ? -Infinity : -10 + (music.config.intensity * 15);
+        }
+    }, [isMuted, music.config.intensity]);
+
     const formatTime = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -67,6 +152,15 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
 
     return (
         <div className="glass-card p-8">
+            {/* Audio Status Indicator */}
+            {!audioInitialized && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-center">
+                    <p className="text-yellow-200 text-sm">
+                        🎵 Click Play to start audio
+                    </p>
+                </div>
+            )}
+
             {/* Visualizer */}
             <div className="relative h-32 mb-8 rounded-xl overflow-hidden bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20">
                 <div className="absolute inset-0 flex items-end justify-around px-4 pb-4">
@@ -125,7 +219,7 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
                     whileTap={{ scale: 0.95 }}
                 >
                     {isMuted ? (
-                        <VolumeX className="w-6 h-6 text-white/60" />
+                        <VolumeX className="w-6 h-6 text-red-400" />
                     ) : (
                         <Volume2 className="w-6 h-6 text-white/80" />
                     )}
