@@ -72,8 +72,8 @@ export default function DetectEmotionPage() {
 
         localStorage.setItem('currentEmotionData', JSON.stringify(emotionWithTimestamp));
 
-        // Save to session history
-        saveSession(aggregated, emotionData.heartRate);
+        // Save to session history (wrap aggregated in array as saveSession expects EmotionScore[])
+        saveSession([aggregated], emotionData.heartRate);
 
         router.push('/music');
     };
@@ -143,7 +143,7 @@ export default function DetectEmotionPage() {
                         Emotion Detection Journey
                     </h1>
                     <p className="text-xl text-white/70">
-                        We'll analyze your emotions step by step through multiple modalities
+                        We&apos;ll analyze your emotions step by step through multiple modalities
                     </p>
                 </div>
 

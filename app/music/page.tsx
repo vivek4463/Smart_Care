@@ -229,7 +229,7 @@ export default function MusicPage() {
                                         <span className="font-semibold">Playback Complete</span>
                                     </div>
                                     <p className="text-white/70">
-                                        We'd love to hear your feedback on this therapeutic music experience
+                                        We&apos;d love to hear your feedback on this therapeutic music experience
                                     </p>
                                 </div>
 
