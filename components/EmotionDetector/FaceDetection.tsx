@@ -110,15 +110,24 @@ export default function FaceDetection({ onComplete }: FaceDetectionProps) {
                 </div>
 
                 {isCapturing && !capturedImage && (
-                    <motion.button
-                        onClick={capture}
-                        className="btn-primary w-full"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <Camera className="w-5 h-5 inline mr-2" />
-                        Capture Photo
-                    </motion.button>
+                    <div className="space-y-3">
+                        <motion.button
+                            onClick={capture}
+                            className="btn-primary w-full"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <Camera className="w-5 h-5 inline mr-2" />
+                            Capture Photo
+                        </motion.button>
+
+                        <button
+                            onClick={() => onComplete([])}
+                            className="text-white/60 hover:text-white/90 transition-colors text-sm underline w-full"
+                        >
+                            Skip Face Detection →
+                        </button>
+                    </div>
                 )}
             </div>
 

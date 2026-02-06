@@ -55,7 +55,7 @@ function emotionToMusicConfig(emotion: EmotionScore): MusicConfig {
         },
     };
 
-    const baseConfig = configs[emotion.emotion] || configs.neutral;
+    const baseConfig = therapeuticConfigs[emotion.emotion] || therapeuticConfigs.neutral;
 
     return {
         tempo: baseConfig.tempo || 90,

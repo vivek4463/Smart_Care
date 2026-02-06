@@ -139,23 +139,54 @@ export async function processVoiceQuery(
 // Text-to-speech with language support
 export function speak(text: string, language: Language = 'en'): void {
     if ('speechSynthesis' in window) {
+        // Cancel any ongoing speech first for better control
+        speechSynthesis.cancel();
+
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+
+        // Improved voice quality settings for gentle, clear speech
+        utterance.rate = 0.75;      // Slower for better clarity
+        utterance.pitch = 1.1;      // Slightly higher for gentleness
+        utterance.volume = 0.85;    // Slightly quieter for pleasant listening
 
         // Set language
         utterance.lang = language === 'te' ? 'te-IN' : 'en-US';
 
-        // Try to find a voice for the selected language
+        // Try to find the best quality voice for the selected language
         const voices = speechSynthesis.getVoices();
-        const languageVoice = voices.find(voice =>
-            voice.lang.startsWith(language === 'te' ? 'te' : 'en')
-        );
 
-        if (languageVoice) {
-            utterance.voice = languageVoice;
+        let selectedVoice = null;
+
+        if (language === 'te') {
+            // For Telugu, prioritize Google or native Telugu voices
+            selectedVoice = voices.find(voice =>
+                voice.lang.startsWith('te') &&
+                (voice.name.includes('Google') || voice.name.includes('Telugu'))
+            ) || voices.find(voice => voice.lang.startsWith('te'));
+        } else {
+            // For English, prioritize high-quality female voices for gentleness
+            selectedVoice =
+                voices.find(voice =>
+                    voice.lang.startsWith('en') &&
+                    voice.name.includes('Google') &&
+                    (voice.name.includes('Female') || voice.name.includes('US'))
+                ) ||
+                voices.find(voice =>
+                    voice.lang.startsWith('en') &&
+                    (voice.name.includes('Samantha') || voice.name.includes('Female'))
+                ) ||
+                voices.find(voice =>
+                    voice.lang.startsWith('en') && voice.name.includes('Google')
+                );
         }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        // Add pauses between sentences for better comprehension
+        const textWithPauses = text.replace(/\n/g, '. ').replace(/\.\s\s/g, '. ... ');
+        utterance.text = textWithPauses;
 
         speechSynthesis.speak(utterance);
     }

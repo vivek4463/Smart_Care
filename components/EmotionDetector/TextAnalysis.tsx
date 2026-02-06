@@ -108,16 +108,25 @@ export default function TextAnalysis({ onComplete }: TextAnalysisProps) {
                     )}
 
                     {!results && !isAnalyzing && (
-                        <motion.button
-                            onClick={handleAnalyze}
-                            disabled={!text.trim()}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                            whileHover={text.trim() ? { scale: 1.02 } : {}}
-                            whileTap={text.trim() ? { scale: 0.98 } : {}}
-                        >
-                            <MessageSquare className="w-5 h-5 inline mr-2" />
-                            Analyze Text
-                        </motion.button>
+                        <div className="space-y-3">
+                            <motion.button
+                                onClick={handleAnalyze}
+                                disabled={!text.trim()}
+                                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                whileHover={text.trim() ? { scale: 1.02 } : {}}
+                                whileTap={text.trim() ? { scale: 0.98 } : {}}
+                            >
+                                <MessageSquare className="w-5 h-5 inline mr-2" />
+                                Analyze Text
+                            </motion.button>
+
+                            <button
+                                onClick={() => onComplete([])}
+                                className="text-white/60 hover:text-white/90 transition-colors text-sm underline w-full"
+                            >
+                                Skip Text Analysis →
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

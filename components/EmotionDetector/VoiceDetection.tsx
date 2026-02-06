@@ -170,15 +170,24 @@ export default function VoiceDetection({ onComplete }: VoiceDetectionProps) {
                 </div>
 
                 {!isRecording && !results && !isAnalyzing && (
-                    <motion.button
-                        onClick={startRecording}
-                        className="btn-primary w-full"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <Mic className="w-5 h-5 inline mr-2" />
-                        Start Recording
-                    </motion.button>
+                    <div className="space-y-3">
+                        <motion.button
+                            onClick={startRecording}
+                            className="btn-primary w-full"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <Mic className="w-5 h-5 inline mr-2" />
+                            Start Recording
+                        </motion.button>
+
+                        <button
+                            onClick={() => onComplete([])}
+                            className="text-white/60 hover:text-white/90 transition-colors text-sm underline w-full"
+                        >
+                            Skip Voice Detection →
+                        </button>
+                    </div>
                 )}
 
                 {isRecording && (
