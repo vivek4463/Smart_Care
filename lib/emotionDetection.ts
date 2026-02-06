@@ -10,9 +10,9 @@ export async function detectFaceEmotion(imageData: string): Promise<EmotionScore
     const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
 
     return [
-        { emotion: primaryEmotion, confidence: 0.95 + Math.random() * 0.05 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.02 + Math.random() * 0.02 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.01 + Math.random() * 0.01 },
+        { emotion: primaryEmotion, confidence: 1.00 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.00 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.00 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
@@ -25,9 +25,9 @@ export async function detectVoiceEmotion(audioBlob: Blob): Promise<EmotionScore[
     const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
 
     return [
-        { emotion: primaryEmotion, confidence: 0.96 + Math.random() * 0.04 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.02 + Math.random() * 0.01 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.01 + Math.random() * 0.01 },
+        { emotion: primaryEmotion, confidence: 1.00 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.00 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.00 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
@@ -78,12 +78,12 @@ export async function analyzeTextEmotion(text: string): Promise<EmotionScore[]> 
     // Calculate total score
     const totalScore = Object.values(emotionScores).reduce((a, b) => a + b, 0);
 
-    // If no emotions detected, return high-confidence neutral
+    // If no emotions detected, return 100% confidence neutral
     if (totalScore === 0) {
         return [
-            { emotion: 'neutral', confidence: 0.95 },
-            { emotion: 'happy', confidence: 0.03 },
-            { emotion: 'sad', confidence: 0.02 },
+            { emotion: 'neutral', confidence: 1.00 },
+            { emotion: 'happy', confidence: 0.00 },
+            { emotion: 'sad', confidence: 0.00 },
         ];
     }
 
@@ -96,17 +96,13 @@ export async function analyzeTextEmotion(text: string): Promise<EmotionScore[]> 
         .filter(score => score.confidence > 0)
         .sort((a, b) => b.confidence - a.confidence);
 
-    // Boost primary emotion confidence to 95%+ for clarity
+    // Set primary emotion confidence to exactly 100%
     if (results.length > 0) {
-        const primaryConfidence = results[0].confidence;
-        const boost = Math.max(0, 0.95 - primaryConfidence);
+        results[0].confidence = 1.00;
 
-        results[0].confidence = 0.95 + Math.random() * 0.05;
-
-        // Redistribute remaining confidence to other emotions
-        const remainingConfidence = 1 - results[0].confidence;
+        // Set all other emotions to 0%
         for (let i = 1; i < results.length; i++) {
-            results[i].confidence = (remainingConfidence / (results.length - 1));
+            results[i].confidence = 0.00;
         }
     }
 

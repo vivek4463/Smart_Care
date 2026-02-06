@@ -84,24 +84,224 @@ export async function generateMusic(emotions: EmotionScore[]): Promise<Generated
     };
 }
 
-// Create a Tone.js synth based on music configuration
-export function createSynth(config: MusicConfig): Tone.PolySynth {
-    const synth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: {
-            type: config.mode === 'major' ? 'sine' : 'triangle',
-        },
-        envelope: {
-            attack: 0.1,
-            decay: 0.2,
-            sustain: 0.5,
-            release: 1,
-        },
-    }).toDestination();
 
-    synth.volume.value = -10 + (config.intensity * 10);
+// Define instrument types
+type InstrumentType = 'piano' | 'guitar' | 'drums' | 'tabla' | 'violin' | 'flute' |
+    'trumpet' | 'accordion' | 'harp' | 'bell' | 'tuba' | 'keyboard' | 'synth';
+
+// Create instrument-specific synth configurations
+function createInstrumentSynth(instrument: InstrumentType, config: MusicConfig): Tone.PolySynth | Tone.Synth | Tone.MembraneSynth {
+    let synth: any;
+
+    switch (instrument) {
+        case 'piano':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: {
+                    attack: 0.005,
+                    decay: 0.3,
+                    sustain: 0.1,
+                    release: 1.2,
+                },
+            }).toDestination();
+            break;
+
+        case 'guitar':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.4,
+                    sustain: 0.3,
+                    release: 1.5,
+                },
+            }).toDestination();
+            break;
+
+        case 'drums':
+            synth = new Tone.MembraneSynth({
+                pitchDecay: 0.05,
+                octaves: 6,
+                oscillator: { type: 'sine' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.4,
+                    sustain: 0.01,
+                    release: 1.4,
+                },
+            }).toDestination();
+            break;
+
+        case 'tabla':
+            synth = new Tone.MembraneSynth({
+                pitchDecay: 0.02,
+                octaves: 8,
+                oscillator: { type: 'triangle' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 0.2,
+                    sustain: 0.01,
+                    release: 0.8,
+                },
+            }).toDestination();
+            break;
+
+        case 'violin':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sawtooth' },
+                envelope: {
+                    attack: 0.3,
+                    decay: 0.1,
+                    sustain: 0.9,
+                    release: 1.0,
+                },
+            }).toDestination();
+            break;
+
+        case 'flute':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine3' },
+                envelope: {
+                    attack: 0.05,
+                    decay: 0.1,
+                    sustain: 0.6,
+                    release: 0.8,
+                },
+            }).toDestination();
+            break;
+
+        case 'trumpet':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'square' },
+                envelope: {
+                    attack: 0.05,
+                    decay: 0.2,
+                    sustain: 0.7,
+                    release: 0.6,
+                },
+            }).toDestination();
+            break;
+
+        case 'accordion':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'square4' },
+                envelope: {
+                    attack: 0.1,
+                    decay: 0.3,
+                    sustain: 0.8,
+                    release: 1.0,
+                },
+            }).toDestination();
+            break;
+
+        case 'harp':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle3' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 1.0,
+                    sustain: 0.0,
+                    release: 1.5,
+                },
+            }).toDestination();
+            break;
+
+        case 'bell':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine6' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 1.5,
+                    sustain: 0.0,
+                    release: 2.0,
+                },
+            }).toDestination();
+            break;
+
+        case 'tuba':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sawtooth4' },
+                envelope: {
+                    attack: 0.1,
+                    decay: 0.3,
+                    sustain: 0.6,
+                    release: 1.2,
+                },
+            }).toDestination();
+            break;
+
+        case 'keyboard':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'square2' },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.4,
+                    sustain: 0.3,
+                    release: 1.0,
+                },
+            }).toDestination();
+            break;
+
+        case 'synth':
+        default:
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: {
+                    type: config.mode === 'major' ? 'sine' : 'triangle',
+                },
+                envelope: {
+                    attack: 0.1,
+                    decay: 0.2,
+                    sustain: 0.5,
+                    release: 1,
+                },
+            }).toDestination();
+            break;
+    }
+
+    // Set volume based on intensity
+    synth.volume.value = -10 + (config.intensity * 15);
 
     return synth;
 }
+
+// Select random instrument based on emotion and seed
+function selectInstrument(config: MusicConfig, seed: number): InstrumentType {
+    const instruments: Record<string, InstrumentType[]> = {
+        happy: ['piano', 'guitar', 'harp', 'bell', 'flute', 'accordion'],
+        sad: ['piano', 'violin', 'flute', 'harp', 'accordion'],
+        neutral: ['piano', 'keyboard', 'synth', 'flute'],
+        angry: ['drums', 'guitar', 'trumpet', 'keyboard'],
+        fearful: ['violin', 'piano', 'synth', 'bell'],
+        surprised: ['bell', 'harp', 'trumpet', 'piano'],
+        disgusted: ['tuba', 'drums', 'keyboard'],
+    };
+
+    // Get instruments suitable for this emotion
+    const emotionInstruments = instruments[config.key] || instruments.neutral;
+
+    // Add tabla for variation (10% chance)
+    if (Math.random() > 0.9) {
+        emotionInstruments.push('tabla');
+    }
+
+    // Select based on seed for consistency within one generation but variety across generations
+    const index = Math.floor(seed * emotionInstruments.length) % emotionInstruments.length;
+    return emotionInstruments[index];
+}
+
+// Create a Tone.js synth based on music configuration with varied instruments
+export function createSynth(config: MusicConfig, seed?: number): any {
+    const generationSeed = seed || (Date.now() + Math.random());
+    const instrument = selectInstrument(config, generationSeed);
+
+    console.log(`🎵 Generating music with instrument: ${instrument.toUpperCase()}`);
+
+    return {
+        synth: createInstrumentSynth(instrument, config),
+        instrumentName: instrument
+    };
+}
+
 
 // Generate a melodic sequence with high variety
 export function generateMelody(config: MusicConfig): { notes: string[], durations: string[] } {

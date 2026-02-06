@@ -39,44 +39,50 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
 
     const togglePlay = async () => {
         await initializeAudio();
+        if (!audioInitialized) {
+            await initializeAudio();
+        }
 
         if (!isPlaying) {
-            // Start playing
-            if (!synthRef.current) {
-                // Create synth and melody
-                synthRef.current = createSynth(music.config);
-                const melody = generateMelody(music.config);
+            // Create synth and melody
+            const seed = Date.now() + Math.random();
+            const synthData = createSynth(music.config, seed);
+            synthRef.current = synthData.synth;
 
-                // Set volume based on mute state
-                if (synthRef.current.volume) {
-                    synthRef.current.volume.value = isMuted ? -Infinity : -10 + (music.config.intensity * 15);
+            // Store instrument name in state (optional: add to component state)
+            console.log(`Playing with ${synthData.instrumentName}`);
+
+            const melody = generateMelody(music.config);
+
+            // Set tempo
+            Tone.Transport.bpm.value = music.config.tempo;
+
+            // Create musical loop
+            let noteIndex = 0;
+            const totalNotes = melody.notes.length;
+
+            loopRef.current = new Tone.Loop((time: number) => {
+                const note = melody.notes[noteIndex % totalNotes];
+                const duration = melody.durations[noteIndex % totalNotes];
+
+                if (synthRef.current) { // Added null check for synthRef.current
+                    synthRef.current.triggerAttackRelease(note, duration, time);
                 }
 
-                // Set tempo
-                Tone.Transport.bpm.value = music.config.tempo;
+                noteIndex++;
 
-                const totalNotes = melody.notes.length;
-                noteIndexRef.current = 0;
+                // Update progress - This logic seems to be for a single note, not overall song progress.
+                // The existing useEffect handles overall progress. This line might need adjustment or removal.
+                // For now, I'll keep it as provided, but note it might conflict with the useEffect's progress update.
+                // const newProgress = (currentTime / duration) * 100; // 'duration' here refers to note duration, not song duration
+                // setProgress(Math.min(newProgress, 100));
+            }, '4n');
 
-                // Create the loop
-                loopRef.current = new Tone.Loop((time) => {
-                    const note = melody.notes[noteIndexRef.current % totalNotes];
-                    const noteDuration = melody.durations[noteIndexRef.current % totalNotes];
-
-                    if (synthRef.current) {
-                        synthRef.current.triggerAttackRelease(note, noteDuration, time);
-                    }
-
-                    noteIndexRef.current++;
-                }, '4n');
-
-                loopRef.current.start(0);
-            }
-
+            loopRef.current.start(0);
             Tone.Transport.start();
             setIsPlaying(true);
         } else {
-            // Pause playing
+            // Pause playback
             Tone.Transport.pause();
             setIsPlaying(false);
         }
