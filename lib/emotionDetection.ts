@@ -19,6 +19,9 @@ export async function analyzeTextEmotionML(text: string): Promise<EmotionScore[]
     }
 
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const response = await fetch(HF_API_URL, {
             method: 'POST',
             headers: {
@@ -26,7 +29,9 @@ export async function analyzeTextEmotionML(text: string): Promise<EmotionScore[]
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ inputs: text }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             if (response.status === 503) {

@@ -23,6 +23,8 @@ export interface MusicConfig {
     duration: number; // in seconds
     instruments: string[];
     intensity: number; // 0-1
+    emotionalTarget?: EmotionType;
+    transitionSpeed?: 'slow' | 'medium' | 'fast';
 }
 
 export interface GeneratedMusic {

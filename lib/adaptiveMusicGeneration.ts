@@ -9,7 +9,7 @@
 
 import * as Tone from 'tone';
 import { EmotionType } from './types';
-import { MusicAction, EmotionState, selectAction, getTimeOfDay } from './reinforcementLearning';
+import { MusicAction, EmotionState, selectAction, getTimeOfDay, generatePossibleActions } from './reinforcementLearning';
 import { UserProfile } from './types/userProfile';
 
 /**
@@ -116,8 +116,6 @@ export function generateAdaptiveMusicConfig(
         timeOfDay: getTimeOfDay()
     };
 
-    // Import RL functions
-    const { generatePossibleActions } = require('./reinforcementLearning');
     const possibleActions = generatePossibleActions(currentEmotion);
 
     // Select best action using ε-greedy policy

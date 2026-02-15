@@ -127,12 +127,32 @@ export default function TherapySessionPage() {
             );
 
             setSessionState(activeState);
+
             // Convert musicConfig to GeneratedMusic format for player
             if (activeState.musicConfig) {
                 setCurrentMusic({
                     id: `music_${Date.now()}`,
                     config: activeState.musicConfig,
                     baseEmotions: [{ emotion: activeState.currentEmotion, confidence: 0.8 }],
+                    duration: 180,
+                    createdAt: new Date()
+                });
+            } else {
+                console.warn('⚠️ No music config generated, using fallback');
+                // Fallback default music if none generated
+                setCurrentMusic({
+                    id: `music_default_${Date.now()}`,
+                    config: {
+                        tempo: 90,
+                        key: 'C',
+                        mode: 'major',
+                        instruments: ['piano', 'pad'],
+                        intensity: 0.5,
+                        emotionalTarget: 'happy',
+                        duration: 180,
+                        transitionSpeed: 'medium'
+                    },
+                    baseEmotions: [{ emotion: 'neutral', confidence: 1.0 }],
                     duration: 180,
                     createdAt: new Date()
                 });
@@ -143,10 +163,11 @@ export default function TherapySessionPage() {
                 setCrisisDetected({ level: activeState.crisisLevel, confidence: 0.8, detectedKeywords: [], recommendedAction: 'Crisis detected', emergencyResources: [] });
             }
 
+            console.log('✅ Therapy session started, navigating to active view');
             setCurrentStep('therapy-active');
         } catch (error) {
-            console.error('Error starting therapy:', error);
-            alert('Failed to start therapy session. Please try again.');
+            console.error('❌ Error starting therapy:', error);
+            alert(`Failed to start therapy session: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setIsProcessing(false);
         }
