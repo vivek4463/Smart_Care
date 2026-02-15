@@ -4,13 +4,29 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Scan, Music, MessageCircle, History, Settings, LogOut, Sparkles } from 'lucide-react';
+import { useMood } from '@/context/MoodContext';
+import { getLocalStorage, removeLocalStorage } from '@/lib/utils/storage';
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { currentMood } = useMood();
     const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
+    // Mood-based greeting emojis
+    const moodGreeting: Record<string, { emoji: string; message: string }> = {
+        happy: { emoji: '😊✨', message: 'You\'re radiating positivity!' },
+        sad: { emoji: '💙🌧️', message: 'Let\'s lift your spirits together' },
+        angry: { emoji: '🔥💪', message: 'Channel that energy positively' },
+        fearful: { emoji: '🌟💜', message: 'You\'re safe and supported here' },
+        neutral: { emoji: '👋🌈', message: 'Ready to enhance your emotional well-being?' },
+        surprised: { emoji: '⚡✨', message: 'Exciting things ahead!' },
+        disgusted: { emoji: '🌿💚', message: 'Let\'s find your balance' }
+    };
+
+    const greeting = currentMood ? moodGreeting[currentMood] : moodGreeting.neutral;
+
     useEffect(() => {
-        const userData = localStorage.getItem('user');
+        const userData = getLocalStorage('user');
         if (!userData) {
             router.push('/login');
         } else {
@@ -66,16 +82,16 @@ export default function DashboardPage() {
                 >
                     <div>
                         <h1 className="text-5xl font-bold mb-2 text-gradient">
-                            Welcome, {user.name}! 👋
+                            Welcome, {user.name}! {greeting.emoji}
                         </h1>
                         <p className="text-xl text-white/60">
-                            Ready to enhance your emotional well-being?
+                            {greeting.message}
                         </p>
                     </div>
 
                     <motion.button
                         onClick={() => {
-                            localStorage.removeItem('user');
+                            removeLocalStorage('user');
                             router.push('/login');
                         }}
                         className="glass-card p-4 hover:bg-white/10 transition-all"
@@ -86,37 +102,43 @@ export default function DashboardPage() {
                     </motion.button>
                 </motion.div>
 
-                {/* Main Actions */}
-                <motion.div
-                    className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"
-                    variants={staggerContainer}
-                >
-                    <ActionCard
-                        icon={<Scan className="w-12 h-12" />}
-                        title="Start Emotion Detection"
-                        description="Begin your emotion analysis journey through multiple modalities"
-                        gradient="from-purple-500 to-pink-500"
-                        onClick={() => router.push('/detect-emotion')}
-                        primary
-                    />
+                {/* Main Action - New Therapy Session */}
+                <motion.div variants={fadeIn} className="mb-8">
+                    <motion.button
+                        onClick={() => router.push('/therapy')}
+                        className="w-full glass-card p-12 text-left group hover:scale-[1.01] transition-all duration-300 relative overflow-hidden"
+                        whileHover={{ y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    <ActionCard
-                        icon={<Music className="w-12 h-12" />}
-                        title="Music Library"
-                        description="Access your personalized therapeutic music collection"
-                        gradient="from-blue-500 to-cyan-500"
-                        onClick={() => router.push('/music')}
-                    />
+                        <div className="relative">
+                            <div className="flex items-start justify-between mb-6">
+                                <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-12 h-12 text-white" />
+                                </div>
+                            </div>
+
+                            <h2 className="text-4xl font-bold text-gradient mb-3">
+                                Start AI Therapy Session ✨
+                            </h2>
+
+                            <p className="text-xl text-white/70 mb-4">
+                                Complete therapy session with emotion detection, personalized music, and progress tracking
+                            </p>
+                        </div>
+                    </motion.button>
                 </motion.div>
 
-                {/* Secondary Actions */}
+                {/* Settings Action */}
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-3 gap-6"
                     variants={staggerContainer}
                 >
                     <ActionCard
                         icon={<History className="w-8 h-8" />}
-                        title="Session History"
+                        title="Session History 📊"
                         description="Review past sessions and progress"
                         gradient="from-orange-500 to-yellow-500"
                         onClick={() => router.push('/history')}
@@ -124,49 +146,13 @@ export default function DashboardPage() {
                     />
 
                     <ActionCard
-                        icon={<MessageCircle className="w-8 h-8" />}
-                        title="Voice Assistant"
-                        description="Chat with your AI wellness guide"
-                        gradient="from-pink-500 to-rose-500"
-                        onClick={() => {
-                            // Trigger voice assistant by clicking the floating button
-                            const voiceButton = document.querySelector('[data-voice-assistant-trigger]');
-                            if (voiceButton instanceof HTMLElement) {
-                                voiceButton.click();
-                            }
-                        }}
-                        small
-                    />
-
-                    <ActionCard
                         icon={<Settings className="w-8 h-8" />}
-                        title="Preferences"
-                        description="Customize your experience"
+                        title="Privacy & Settings ⚙️"
+                        description="Manage data, consent, and privacy"
                         gradient="from-indigo-500 to-purple-500"
-                        onClick={() => router.push('/preferences')}
+                        onClick={() => router.push('/settings')}
                         small
                     />
-                </motion.div>
-
-                {/* Info Section */}
-                <motion.div
-                    className="mt-12 glass-card p-8"
-                    variants={fadeIn}
-                >
-                    <div className="flex items-start gap-4">
-                        <Sparkles className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-1" />
-                        <div>
-                            <h3 className="text-xl font-semibold text-white mb-2">
-                                How Smart Care Works
-                            </h3>
-                            <p className="text-white/70 leading-relaxed">
-                                Our AI-powered system analyzes your emotions through multiple channels - facial expressions,
-                                voice patterns, text input, and optional heart rate data. Based on this comprehensive analysis,
-                                we generate personalized therapeutic music designed to support your emotional well-being.
-                                Your feedback helps our system continuously improve and better serve your needs.
-                            </p>
-                        </div>
-                    </div>
                 </motion.div>
             </motion.div>
         </div>

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Star, MessageSquare, ThumbsUp, Send, CheckCircle, TrendingUp } from 'lucide-react';
 import { Feedback, SatisfactionLevel, GeneratedMusic } from '@/lib/types';
 import { analyzeFeedback, storeFeedback, getSatisfactionEmoji, generateImprovementSuggestions } from '@/lib/feedbackAnalysis';
+import { getLocalStorage } from '@/lib/utils/storage';
 
 const satisfactionLevels: { value: SatisfactionLevel; label: string }[] = [
     { value: 'very_dissatisfied', label: 'Very Dissatisfied' },
@@ -30,7 +31,7 @@ export default function FeedbackPage() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const musicData = localStorage.getItem('currentMusic');
+        const musicData = getLocalStorage('currentMusic');
         if (!musicData) return;
 
         const music: GeneratedMusic = JSON.parse(musicData);
@@ -224,8 +225,8 @@ export default function FeedbackPage() {
                                     type="button"
                                     onClick={() => setSatisfaction(level.value)}
                                     className={`p-4 rounded-xl border-2 transition-all ${satisfaction === level.value
-                                            ? 'border-purple-500 bg-purple-500/20'
-                                            : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                        ? 'border-purple-500 bg-purple-500/20'
+                                        : 'border-white/10 bg-white/5 hover:bg-white/10'
                                         }`}
                                 >
                                     <div className="text-4xl mb-2">{getSatisfactionEmoji(level.value)}</div>

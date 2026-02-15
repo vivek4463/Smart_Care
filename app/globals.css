@@ -3,13 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0118;
+  --background: #0a0e16;
   --foreground: #ffffff;
   --card: rgba(255, 255, 255, 0.05);
   --card-hover: rgba(255, 255, 255, 0.1);
   --border: rgba(255, 255, 255, 0.1);
-  --glow-primary: #8b5cf6;
-  --glow-secondary: #d946ef;
+  --glow-primary: #06b6d4;
+  --glow-secondary: #0891b2;
+
+  /* Mood-responsive variables (updated dynamically) */
+  --mood-primary: #06b6d4;
+  --mood-secondary: #0891b2;
+  --mood-accent: #22d3ee;
+  --mood-glow: rgba(6, 182, 212, 0.5);
+  --mood-particle: #06b6d4;
+
+  /* Transition duration for mood changes */
+  --mood-transition: 2s;
 }
 
 @layer base {
@@ -31,29 +41,33 @@
 
   /* Glassmorphism Card */
   .glass-card {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl;
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
     background: linear-gradient(135deg,
         rgba(255, 255, 255, 0.1),
         rgba(255, 255, 255, 0.05));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   }
 
   .glass-card:hover {
     @apply bg-white/10 border-white/20;
     transform: translateY(-2px);
     transition: all 0.3s ease;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   }
 
-  /* Premium Button */
+  /* Premium Button - Mood Adaptive */
   .btn-primary {
     @apply px-8 py-4 rounded-full font-semibold text-white;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, var(--mood-primary) 0%, var(--mood-secondary) 100%);
+    box-shadow: 0 10px 30px var(--mood-glow);
+    transition: all var(--mood-transition) ease, transform 0.3s ease;
   }
 
   .btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 15px 40px var(--mood-glow);
   }
 
   .btn-secondary {
@@ -70,7 +84,7 @@
 
   /* Animated Background */
   .animated-bg {
-    background: linear-gradient(-45deg, #0a0118, #1a0a2e, #16213e, #0f3460);
+    background: linear-gradient(-45deg, #0a0e16, #0f1419, #0d1b2a, #1b263b);
     background-size: 400% 400%;
     animation: gradient 15s ease infinite;
   }
@@ -92,12 +106,14 @@
   /* Input Fields */
   .input-field {
     @apply w-full px-6 py-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10;
-    @apply text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50;
+    @apply text-white placeholder-white/40 focus:outline-none focus:border-cyan-500/50;
     @apply transition-all duration-300;
   }
 
   .input-field:focus {
-    @apply bg-white/10 shadow-lg shadow-purple-500/20;
+    @apply bg-white/10;
+    box-shadow: 0 4px 20px rgba(6, 182, 212, 0.2),
+      0 0 0 1px rgba(6, 182, 212, 0.3) inset;
   }
 
   /* Glow Effect */

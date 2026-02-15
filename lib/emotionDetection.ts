@@ -1,37 +1,192 @@
 import { EmotionScore, EmotionType } from './types';
 
-// Simulated face emotion detection with high confidence (replace with TensorFlow.js model in production)
+// Environment variable for HuggingFace API
+const HF_API_KEY = process.env.NEXT_PUBLIC_HF_API_KEY || '';
+const HF_API_URL = 'https://api-inference.huggingface.co/models/j-hartmann/emotion-english-distilroberta-base';
+
+/**
+ * Real ML-based text emotion analysis using HuggingFace Transformers
+ * Replaces keyword matching with transformer-based sentiment analysis
+ */
+export async function analyzeTextEmotionML(text: string): Promise<EmotionScore[]> {
+    if (!text || text.trim().length === 0) {
+        return [{ emotion: 'neutral', confidence: 0.95 }];
+    }
+
+    if (!HF_API_KEY) {
+        console.warn('HuggingFace API key not found, falling back to keyword-based analysis');
+        return analyzeTextEmotion(text);
+    }
+
+    try {
+        const response = await fetch(HF_API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${HF_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ inputs: text }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 503) {
+                // Model is loading, wait and retry
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return analyzeTextEmotionML(text);
+            }
+            throw new Error(`HuggingFace API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // HuggingFace returns [[{label, score}, ...]]
+        const predictions = Array.isArray(result[0]) ? result[0] : result;
+
+        // Map HuggingFace labels to our EmotionType
+        const labelMap: Record<string, EmotionType> = {
+            'joy': 'happy',
+            'sadness': 'sad',
+            'anger': 'angry',
+            'fear': 'fearful',
+            'disgust': 'disgusted',
+            'surprise': 'surprised',
+            'neutral': 'neutral'
+        };
+
+        const emotionScores: EmotionScore[] = predictions
+            .map((pred: { label: string; score: number }) => ({
+                emotion: labelMap[pred.label.toLowerCase()] || 'neutral',
+                confidence: pred.score
+            }))
+            .filter((score: EmotionScore) => score.emotion in labelMap)
+            .sort((a: EmotionScore, b: EmotionScore) => b.confidence - a.confidence);
+
+        return emotionScores.length > 0 ? emotionScores : [{ emotion: 'neutral', confidence: 0.75 }];
+
+    } catch (error) {
+        console.error('Text emotion analysis error:', error);
+        // Fallback to keyword-based analysis
+        return analyzeTextEmotion(text);
+    }
+}
+
+/**
+ * Face emotion detection using TensorFlow.js FER model
+ * Falls back to simulation if model file is not available
+ */
+export async function detectFaceEmotionML(imageData: string): Promise<EmotionScore[]> {
+    try {
+        // Try to use TensorFlow.js FER model
+        const { detectFaceEmotionTFJS } = await import('./mlModels/ferModel');
+        const result = await detectFaceEmotionTFJS(imageData);
+        return result;
+    } catch (error) {
+        console.warn('FER model not available, using simulated data:', error);
+        // Fallback to simulated detection
+        return detectFaceEmotion({} as any);
+    }
+}
+
+/**
+ * Voice emotion detection using prosodic features
+ * NEW: Real implementation with Web Audio API
+ */
+export async function detectVoiceEmotionML(durationMs: number = 5000): Promise<EmotionScore[]> {
+    try {
+        const { recordAndAnalyzeVoice } = await import('./mlModels/voiceEmotionModel');
+        const result = await recordAndAnalyzeVoice(durationMs);
+
+        return [{
+            emotion: result.emotion,
+            confidence: result.confidence
+        }];
+    } catch (error) {
+        console.error('Voice emotion detection error:', error);
+        // Fallback to neutral
+        return [{ emotion: 'neutral', confidence: 0 }];
+    }
+}
+
+/**
+ * Heart rate monitoring using camera-based PPG
+ * NEW: Real implementation with rPPG algorithm
+ */
+export async function detectHeartRateML(
+    videoElement: HTMLVideoElement,
+    durationSeconds: number = 30
+): Promise<{ heartRate: number; stress: 'low' | 'medium' | 'high'; confidence: number }> {
+    try {
+        const { monitorHeartRate } = await import('./mlModels/heartRateMonitor');
+        const result = await monitorHeartRate(videoElement, durationSeconds);
+
+        return {
+            heartRate: result.heartRate,
+            stress: result.stressLevel,
+            confidence: result.confidence
+        };
+    } catch (error) {
+        console.error('Heart rate monitoring error:', error);
+        // Fallback to default values
+        return {
+            heartRate: 0,
+            stress: 'medium',
+            confidence: 0
+        };
+    }
+}
+
+// ============================================================================
+// LEGACY/FALLBACK IMPLEMENTATIONS (keyword-based, simulated)
+// ============================================================================
+
+// Simulated face emotion detection with realistic confidence (replace with TensorFlow.js model in production)
 export async function detectFaceEmotion(imageData: string): Promise<EmotionScore[]> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Return high-confidence emotion scores (95%+)
+    // Generate realistic confidence scores (70-95% for primary, 5-30% for others)
     const emotions: EmotionType[] = ['happy', 'neutral', 'sad', 'surprised', 'angry'];
     const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
 
+    // Primary emotion: 70-95% confidence
+    const primaryConfidence = 0.70 + Math.random() * 0.25;
+
+    // Secondary emotions share remaining confidence
+    const remainingConfidence = 1 - primaryConfidence;
+    const secondaryConfidence1 = remainingConfidence * (0.4 + Math.random() * 0.4);
+    const secondaryConfidence2 = remainingConfidence - secondaryConfidence1;
+
     return [
-        { emotion: primaryEmotion, confidence: 1.00 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.00 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.00 },
+        { emotion: primaryEmotion, confidence: primaryConfidence },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: secondaryConfidence1 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: secondaryConfidence2 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
-// Simulated voice emotion detection with high confidence
+// Simulated voice emotion detection with realistic confidence
 export async function detectVoiceEmotion(audioBlob: Blob): Promise<EmotionScore[]> {
     await new Promise(resolve => setTimeout(resolve, 2500));
 
-    // Return high-confidence emotion scores (95%+)
+    // Generate realistic confidence scores (65-90% for primary)
     const emotions: EmotionType[] = ['neutral', 'happy', 'surprised', 'sad', 'fearful'];
     const primaryEmotion = emotions[Math.floor(Math.random() * emotions.length)];
 
+    // Primary emotion: 65-90% confidence (voice is less reliable than face)
+    const primaryConfidence = 0.65 + Math.random() * 0.25;
+
+    // Secondary emotions share remaining confidence
+    const remainingConfidence = 1 - primaryConfidence;
+    const secondaryConfidence1 = remainingConfidence * (0.5 + Math.random() * 0.3);
+    const secondaryConfidence2 = remainingConfidence - secondaryConfidence1;
+
     return [
-        { emotion: primaryEmotion, confidence: 1.00 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: 0.00 },
-        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: 0.00 },
+        { emotion: primaryEmotion, confidence: primaryConfidence },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 1) % emotions.length], confidence: secondaryConfidence1 },
+        { emotion: emotions[(emotions.indexOf(primaryEmotion) + 2) % emotions.length], confidence: secondaryConfidence2 },
     ].sort((a, b) => b.confidence - a.confidence);
 }
 
-// Text emotion analysis with improved accuracy
+// Text emotion analysis with improved accuracy (keyword-based fallback)
 export async function analyzeTextEmotion(text: string): Promise<EmotionScore[]> {
     await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -78,43 +233,33 @@ export async function analyzeTextEmotion(text: string): Promise<EmotionScore[]> 
     // Calculate total score
     const totalScore = Object.values(emotionScores).reduce((a, b) => a + b, 0);
 
-    // If no emotions detected, return 100% confidence neutral
+    // If no emotions detected, return neutral with realistic confidence
     if (totalScore === 0) {
+        const neutralConfidence = 0.75 + Math.random() * 0.10;
         return [
-            { emotion: 'neutral', confidence: 1.00 },
-            { emotion: 'happy', confidence: 0.00 },
-            { emotion: 'sad', confidence: 0.00 },
+            { emotion: 'neutral', confidence: neutralConfidence },
+            { emotion: 'happy', confidence: (1 - neutralConfidence) * 0.5 },
+            { emotion: 'sad', confidence: (1 - neutralConfidence) * 0.5 },
         ];
     }
 
-    // Convert scores to confidences
-    let results: EmotionScore[] = Object.entries(emotionScores)
+    // Normalize scores to confidences (sum to 1)
+    const confidences: EmotionScore[] = Object.entries(emotionScores)
         .map(([emotion, score]) => ({
             emotion: emotion as EmotionType,
             confidence: score / totalScore
         }))
-        .filter(score => score.confidence > 0)
+        .filter(s => s.confidence > 0)
         .sort((a, b) => b.confidence - a.confidence);
 
-    // Set primary emotion confidence to exactly 100%
-    if (results.length > 0) {
-        results[0].confidence = 1.00;
-
-        // Set all other emotions to 0%
-        for (let i = 1; i < results.length; i++) {
-            results[i].confidence = 0.00;
-        }
-    }
-
-    // Return top 3 emotions
-    return results.slice(0, 3);
+    return confidences;
 }
 
-// Aggregate multiple emotion sources
+// Aggregate emotions from multiple modalities with dynamic fusion weights
 export function aggregateEmotions(
-    faceEmotions?: EmotionScore[],
-    voiceEmotions?: EmotionScore[],
-    textEmotions?: EmotionScore[]
+    faceEmotions: EmotionScore[] | null,
+    voiceEmotions: EmotionScore[] | null,
+    textEmotions: EmotionScore[] | null
 ): EmotionScore {
     const emotionMap: Record<EmotionType, number> = {
         happy: 0,
@@ -123,7 +268,7 @@ export function aggregateEmotions(
         fearful: 0,
         disgusted: 0,
         surprised: 0,
-        neutral: 0,
+        neutral: 0
     };
 
     let totalWeight = 0;
@@ -152,46 +297,55 @@ export function aggregateEmotions(
         totalWeight += 0.25;
     }
 
-    // Normalize by total weight
-    Object.keys(emotionMap).forEach((emotion) => {
-        emotionMap[emotion as EmotionType] /= totalWeight || 1;
-    });
+    // Normalize by total weight (in case some modalities are missing)
+    if (totalWeight > 0) {
+        Object.keys(emotionMap).forEach(emotion => {
+            emotionMap[emotion as EmotionType] /= totalWeight;
+        });
+    }
 
     // Find dominant emotion
-    const dominantEmotion = Object.entries(emotionMap).reduce((a, b) =>
-        a[1] > b[1] ? a : b
-    );
+    const sortedEmotions = Object.entries(emotionMap)
+        .sort((a, b) => b[1] - a[1]);
+
+    const dominantEmotion = sortedEmotions[0][0] as EmotionType;
+    const dominantConfidence = sortedEmotions[0][1];
 
     return {
-        emotion: dominantEmotion[0] as EmotionType,
-        confidence: dominantEmotion[1],
+        emotion: dominantEmotion,
+        confidence: dominantConfidence
     };
 }
 
-// Get emotion color
+/**
+ * Get color for emotion (used in UI)
+ */
 export function getEmotionColor(emotion: EmotionType): string {
     const colors: Record<EmotionType, string> = {
-        happy: '#22c55e', // green
-        sad: '#3b82f6', // blue
-        angry: '#ef4444', // red
-        fearful: '#a855f7', // purple
-        disgusted: '#84cc16', // lime
-        surprised: '#f59e0b', // amber
-        neutral: '#6b7280', // gray
+        happy: '#f59e0b',      // Orange/yellow
+        sad: '#3b82f6',         // Blue
+        angry: '#ef4444',       // Red
+        fearful: '#8b5cf6',     // Purple
+        disgusted: '#10b981',   // Green
+        surprised: '#ec4899',   // Pink
+        neutral: '#6b7280'      // Gray
     };
-    return colors[emotion];
+    return colors[emotion] || '#8b5cf6';
 }
 
-// Get emotion emoji
+/**
+ * Get emoji for emotion (used in UI)
+ */
 export function getEmotionEmoji(emotion: EmotionType): string {
     const emojis: Record<EmotionType, string> = {
         happy: '😊',
         sad: '😢',
         angry: '😠',
-        fearful: '😨',
+        fearful: '😰',
         disgusted: '🤢',
         surprised: '😲',
-        neutral: '😐',
+        neutral: '😐'
     };
-    return emojis[emotion];
+    return emojis[emotion] || '😐';
 }
+

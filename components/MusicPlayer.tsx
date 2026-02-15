@@ -6,6 +6,8 @@ import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { GeneratedMusic } from '@/lib/types';
 import * as Tone from 'tone';
 import { createSynth, generateMelody } from '@/lib/musicGeneration';
+import { usePreferences } from '@/context/PreferencesContext';
+import { useMood } from '@/context/MoodContext';
 
 interface MusicPlayerProps {
     music: GeneratedMusic;
@@ -13,6 +15,8 @@ interface MusicPlayerProps {
 }
 
 export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerProps) {
+    const { preferences } = usePreferences();
+    const { moodTheme } = useMood();
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
@@ -52,18 +56,18 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
             // Store instrument name in state (optional: add to component state)
             console.log(`Playing with ${synthData.instrumentName}`);
 
-            const melody = generateMelody(music.config);
+            const generated = generateMelody(music.config, music.baseEmotions[0]?.emotion || 'neutral');
 
             // Set tempo
             Tone.Transport.bpm.value = music.config.tempo;
 
             // Create musical loop
             let noteIndex = 0;
-            const totalNotes = melody.notes.length;
+            const totalNotes = generated.melody.notes.length;
 
             loopRef.current = new Tone.Loop((time: number) => {
-                const note = melody.notes[noteIndex % totalNotes];
-                const duration = melody.durations[noteIndex % totalNotes];
+                const note = generated.melody.notes[noteIndex % totalNotes];
+                const duration = generated.melody.durations[noteIndex % totalNotes];
 
                 if (synthRef.current) { // Added null check for synthRef.current
                     synthRef.current.triggerAttackRelease(note, duration, time);
@@ -94,6 +98,14 @@ export default function MusicPlayer({ music, onPlaybackComplete }: MusicPlayerPr
             synthRef.current.volume.value = !isMuted ? -Infinity : -10 + (music.config.intensity * 15);
         }
     };
+
+    // Apply volume from preferences
+    useEffect(() => {
+        if (synthRef.current && synthRef.current.volume) {
+            const volumeDb = ((preferences.volume / 100) * 20) - 10; // Convert 0-100 to -10 to +10 dB
+            synthRef.current.volume.value = isMuted ? -Infinity : volumeDb;
+        }
+    }, [preferences.volume, isMuted]);
 
     useEffect(() => {
         if (isPlaying) {

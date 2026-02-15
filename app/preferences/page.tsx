@@ -2,37 +2,17 @@
 
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, Volume2, Bell, Moon, Sun, Palette, Save, Check } from 'lucide-react';
-
-interface Preferences {
-    theme: 'dark' | 'light';
-    volume: number;
-    notifications: boolean;
-    autoPlayMusic: boolean;
-    musicDuration: number;
-}
+import { usePreferences } from '@/context/PreferencesContext';
 
 export default function PreferencesPage() {
     const router = useRouter();
-    const [preferences, setPreferences] = useState<Preferences>({
-        theme: 'dark',
-        volume: 80,
-        notifications: true,
-        autoPlayMusic: false,
-        musicDuration: 150
-    });
+    const { preferences, updatePreferences, savePreferences } = usePreferences();
     const [saved, setSaved] = useState(false);
 
-    useEffect(() => {
-        const stored = localStorage.getItem('preferences');
-        if (stored) {
-            setPreferences(JSON.parse(stored));
-        }
-    }, []);
-
-    const savePreferences = () => {
-        localStorage.setItem('preferences', JSON.stringify(preferences));
+    const handleSave = () => {
+        savePreferences();
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -101,7 +81,7 @@ export default function PreferencesPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <motion.button
-                                onClick={() => setPreferences({ ...preferences, theme: 'dark' })}
+                                onClick={() => updatePreferences({ theme: 'dark' })}
                                 className={`p-4 rounded-xl border-2 transition-all ${preferences.theme === 'dark'
                                     ? 'border-purple-500 bg-purple-500/20'
                                     : 'border-white/10 bg-white/5'
@@ -114,7 +94,7 @@ export default function PreferencesPage() {
                             </motion.button>
 
                             <motion.button
-                                onClick={() => setPreferences({ ...preferences, theme: 'light' })}
+                                onClick={() => updatePreferences({ theme: 'light' })}
                                 className={`p-4 rounded-xl border-2 transition-all ${preferences.theme === 'light'
                                     ? 'border-purple-500 bg-purple-500/20'
                                     : 'border-white/10 bg-white/5'
@@ -151,7 +131,7 @@ export default function PreferencesPage() {
                             min="0"
                             max="100"
                             value={preferences.volume}
-                            onChange={(e) => setPreferences({ ...preferences, volume: parseInt(e.target.value) })}
+                            onChange={(e) => updatePreferences({ volume: parseInt(e.target.value) })}
                             className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
                         />
                     </motion.div>
@@ -175,7 +155,7 @@ export default function PreferencesPage() {
                             </div>
 
                             <motion.button
-                                onClick={() => setPreferences({ ...preferences, notifications: !preferences.notifications })}
+                                onClick={() => updatePreferences({ notifications: !preferences.notifications })}
                                 className={`relative w-16 h-8 rounded-full transition-colors ${preferences.notifications ? 'bg-purple-500' : 'bg-white/20'
                                     }`}
                                 whileTap={{ scale: 0.95 }}
@@ -202,7 +182,7 @@ export default function PreferencesPage() {
                             </div>
 
                             <motion.button
-                                onClick={() => setPreferences({ ...preferences, autoPlayMusic: !preferences.autoPlayMusic })}
+                                onClick={() => updatePreferences({ autoPlayMusic: !preferences.autoPlayMusic })}
                                 className={`relative w-16 h-8 rounded-full transition-colors ${preferences.autoPlayMusic ? 'bg-purple-500' : 'bg-white/20'
                                     }`}
                                 whileTap={{ scale: 0.95 }}
@@ -233,7 +213,7 @@ export default function PreferencesPage() {
                             {[60, 90, 120, 150, 180].map((duration) => (
                                 <motion.button
                                     key={duration}
-                                    onClick={() => setPreferences({ ...preferences, musicDuration: duration })}
+                                    onClick={() => updatePreferences({ musicDuration: duration })}
                                     className={`flex-1 p-3 rounded-xl border-2 transition-all ${preferences.musicDuration === duration
                                         ? 'border-purple-500 bg-purple-500/20'
                                         : 'border-white/10 bg-white/5'
@@ -250,7 +230,7 @@ export default function PreferencesPage() {
 
                 {/* Save Button */}
                 <motion.button
-                    onClick={savePreferences}
+                    onClick={handleSave}
                     className="mt-8 w-full btn-primary flex items-center justify-center gap-2"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

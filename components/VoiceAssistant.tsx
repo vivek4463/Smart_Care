@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, X, Volume2, Loader, Send, Globe } from 'lucide-react';
 import { processVoiceQuery, speak, startListening, Language } from '@/lib/voiceAssistant';
 import { VoiceQuery, VoiceResponse } from '@/lib/types';
+import { getLocalStorage, setLocalStorage } from '@/lib/utils/storage';
 
 export default function VoiceAssistant() {
     const router = useRouter();
@@ -23,7 +24,7 @@ export default function VoiceAssistant() {
 
     // Load language preference on mount
     useEffect(() => {
-        const savedLang = localStorage.getItem('voiceAssistantLanguage') as Language;
+        const savedLang = getLocalStorage('voiceAssistantLanguage') as Language;
         if (savedLang) {
             setSelectedLanguage(savedLang);
         }
@@ -32,7 +33,7 @@ export default function VoiceAssistant() {
     // Show language modal on first open
     useEffect(() => {
         if (isOpen) {
-            const hasSeenModal = localStorage.getItem('voiceAssistantLanguageSet');
+            const hasSeenModal = getLocalStorage('voiceAssistantLanguageSet');
             if (!hasSeenModal) {
                 setShowLanguageModal(true);
             }
@@ -41,8 +42,8 @@ export default function VoiceAssistant() {
 
     const handleLanguageSelect = (lang: Language) => {
         setSelectedLanguage(lang);
-        localStorage.setItem('voiceAssistantLanguage', lang);
-        localStorage.setItem('voiceAssistantLanguageSet', 'true');
+        setLocalStorage('voiceAssistantLanguage', lang);
+        setLocalStorage('voiceAssistantLanguageSet', 'true');
         setShowLanguageModal(false);
     };
 
@@ -290,8 +291,8 @@ export default function VoiceAssistant() {
                             <motion.button
                                 onClick={handleStartListening}
                                 className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all ${isListening
-                                        ? 'bg-red-500 hover:bg-red-600'
-                                        : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                                    ? 'bg-red-500 hover:bg-red-600'
+                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
                                     }`}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}

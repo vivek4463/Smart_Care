@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Calendar, Music, TrendingUp, ArrowLeft, Trash2 } from 'lucide-react';
+import { getLocalStorage, setLocalStorage } from '@/lib/utils/storage';
 
 interface SessionData {
     id: string;
@@ -18,38 +19,43 @@ export default function SessionHistoryPage() {
     const [sessions, setSessions] = useState<SessionData[]>([]);
 
     useEffect(() => {
-        // Load sessions from localStorage
-        const storedSessions = localStorage.getItem('sessionHistory');
-        if (storedSessions) {
-            const parsed = JSON.parse(storedSessions);
-            setSessions(parsed.map((s: any) => ({ ...s, date: new Date(s.date) })));
-        } else {
-            // Create sample data if none exists
-            const sampleSessions: SessionData[] = [
-                {
-                    id: '1',
-                    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-                    emotion: 'Happy',
-                    musicGenerated: true,
-                    satisfaction: 5
-                },
-                {
-                    id: '2',
-                    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                    emotion: 'Calm',
-                    musicGenerated: true,
-                    satisfaction: 4
-                },
-            ];
-            localStorage.setItem('sessionHistory', JSON.stringify(sampleSessions));
-            setSessions(sampleSessions);
-        }
+        // Function to load sessions from localStorage
+        const loadSessions = () => {
+            const storedSessions = getLocalStorage('sessionHistory');
+            if (storedSessions) {
+                const parsed = JSON.parse(storedSessions);
+                setSessions(parsed.map((s: any) => ({ ...s, date: new Date(s.date) })));
+            }
+        };
+
+        // Load sessions initially
+        loadSessions();
+
+        // Listen for storage changes (when new sessions are added)
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'sessionHistory') {
+                loadSessions();
+            }
+        };
+
+        // Listen for custom event when sessions are updated (within same tab)
+        const handleSessionUpdate = () => {
+            loadSessions();
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('sessionHistoryUpdated', handleSessionUpdate);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('sessionHistoryUpdated', handleSessionUpdate);
+        };
     }, []);
 
     const deleteSession = (id: string) => {
         const updated = sessions.filter(s => s.id !== id);
         setSessions(updated);
-        localStorage.setItem('sessionHistory', JSON.stringify(updated));
+        setLocalStorage('sessionHistory', JSON.stringify(updated));
     };
 
     const getEmotionColor = (emotion: string) => {
@@ -99,10 +105,10 @@ export default function SessionHistoryPage() {
 
                     <div>
                         <h1 className="text-4xl font-bold text-gradient mb-2">
-                            Session History
+                            Session History 📊
                         </h1>
                         <p className="text-white/60">
-                            Track your progress and previous sessions
+                            Track your emotional journey and progress 🌟
                         </p>
                     </div>
                 </div>
@@ -121,7 +127,7 @@ export default function SessionHistoryPage() {
                             </div>
                             <div>
                                 <div className="text-3xl font-bold text-white">{sessions.length}</div>
-                                <div className="text-sm text-white/60">Total Sessions</div>
+                                <div className="text-sm text-white/60">Total Sessions 🎯</div>
                             </div>
                         </div>
                     </motion.div>

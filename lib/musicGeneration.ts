@@ -1,79 +1,129 @@
 import * as Tone from 'tone';
 import { EmotionScore, MusicConfig, GeneratedMusic } from './types';
 
-// Map emotions to musical parameters
-function emotionToMusicConfig(emotion: EmotionScore): MusicConfig {
+// Chord progression definitions for professional sound
+type ChordProgression = {
+    chords: string[][];
+    emotionalTone: string;
+};
+
+const CHORD_PROGRESSIONS: Record<string, ChordProgression> = {
+    uplifting: {
+        chords: [
+            ['C4', 'E4', 'G4'], // I (C major)
+            ['F4', 'A4', 'C5'], // IV (F major)
+            ['G4', 'B4', 'D5'], // V (G major)
+            ['C4', 'E4', 'G4'], // I (C major)
+        ],
+        emotionalTone: 'hopeful and positive'
+    },
+    calming: {
+        chords: [
+            ['C4', 'E4', 'G4'], // I
+            ['A3', 'C4', 'E4'], // vi
+            ['F4', 'A4', 'C5'], // IV
+            ['C4', 'E4', 'G4'], // I
+        ],
+        emotionalTone: 'peaceful and soothing'
+    },
+    contemplative: {
+        chords: [
+            ['A3', 'C4', 'E4'], // Am (i)
+            ['D4', 'F4', 'A4'], // Dm (iv)
+            ['E4', 'G4', 'B4'], // Em (v)
+            ['A3', 'C4', 'E4'], // Am (i)
+        ],
+        emotionalTone: 'introspective'
+    },
+    energizing: {
+        chords: [
+            ['C4', 'E4', 'G4'], // I
+            ['G4', 'B4', 'D5'], // V
+            ['A3', 'C4', 'E4'], // vi
+            ['F4', 'A4', 'C5'], // IV
+        ],
+        emotionalTone: 'motivating'
+    },
+};
+
+// Map emotions to therapeutic musical parameters
+function emotionToMusicConfig(emotion: EmotionScore, heartRate?: number): MusicConfig {
     const configs: Record<string, Partial<MusicConfig>> = {
-        happy: {
-            tempo: 120,
-            key: 'C',
-            mode: 'major' as const,
-            instruments: ['synth', 'piano', 'drums'],
-            intensity: 0.7,
-        },
         sad: {
-            tempo: 60,
-            key: 'Am',
-            mode: 'minor' as const,
-            instruments: ['piano', 'strings'],
-            intensity: 0.3,
-        },
-        neutral: {
-            tempo: 90,
+            tempo: 75,
             key: 'C',
             mode: 'major' as const,
-            instruments: ['synth', 'piano'],
-            intensity: 0.5,
+            instruments: ['piano', 'harp', 'flute', 'pad'],
+            intensity: 0.45,
         },
         angry: {
-            tempo: 140,
-            key: 'Dm',
-            mode: 'minor' as const,
-            instruments: ['synth', 'drums', 'bass'],
-            intensity: 0.9,
+            tempo: 85,
+            key: 'G',
+            mode: 'major' as const,
+            instruments: ['piano', 'flute', 'bell', 'pad'],
+            intensity: 0.5,
         },
         fearful: {
             tempo: 70,
-            key: 'Em',
-            mode: 'minor' as const,
-            instruments: ['synth', 'strings'],
+            key: 'C',
+            mode: 'major' as const,
+            instruments: ['piano', 'harp', 'bell', 'pad'],
             intensity: 0.4,
         },
-        surprised: {
-            tempo: 110,
+        neutral: {
+            tempo: 95,
             key: 'G',
             mode: 'major' as const,
-            instruments: ['synth', 'piano', 'drums'],
-            intensity: 0.6,
+            instruments: ['piano', 'guitar', 'bell', 'strings'],
+            intensity: 0.55,
+        },
+        happy: {
+            tempo: 105,
+            key: 'C',
+            mode: 'major' as const,
+            instruments: ['piano', 'guitar', 'harp', 'strings'],
+            intensity: 0.65,
+        },
+        surprised: {
+            tempo: 90,
+            key: 'G',
+            mode: 'major' as const,
+            instruments: ['piano', 'bell', 'harp', 'strings'],
+            intensity: 0.5,
         },
         disgusted: {
             tempo: 80,
-            key: 'Fm',
-            mode: 'minor' as const,
-            instruments: ['synth'],
-            intensity: 0.5,
+            key: 'C',
+            mode: 'major' as const,
+            instruments: ['flute', 'harp', 'bell', 'pad'],
+            intensity: 0.45,
         },
     };
 
     const baseConfig = configs[emotion.emotion] || configs.neutral;
+    let adjustedTempo = baseConfig.tempo || 90;
+
+    if (heartRate) {
+        if (heartRate > 90) {
+            adjustedTempo = Math.max(60, adjustedTempo - 10);
+        } else if (heartRate < 60) {
+            adjustedTempo = Math.min(110, adjustedTempo + 5);
+        }
+    }
 
     return {
-        tempo: baseConfig.tempo || 90,
+        tempo: adjustedTempo,
         key: baseConfig.key || 'C',
         mode: baseConfig.mode || 'major',
-        duration: 150, // 2.5 minutes
-        instruments: baseConfig.instruments || ['synth'],
+        duration: 150,
+        instruments: baseConfig.instruments || ['piano', 'harp'],
         intensity: baseConfig.intensity || 0.5,
     };
 }
 
-// Generate therapeutic music based on emotion
-export async function generateMusic(emotions: EmotionScore[]): Promise<GeneratedMusic> {
+export async function generateMusic(emotions: EmotionScore[], heartRate?: number): Promise<GeneratedMusic> {
     const primaryEmotion = emotions[0];
-    const config = emotionToMusicConfig(primaryEmotion);
-
-    // In a production app, this would call an AI music generation API
-    // For now, we'll return configuration that can be used to synthesize music
+    const config = emotionToMusicConfig(primaryEmotion, heartRate);
 
     return {
         id: `music_${Date.now()}`,
@@ -84,13 +134,11 @@ export async function generateMusic(emotions: EmotionScore[]): Promise<Generated
     };
 }
 
-
-// Define instrument types
 type InstrumentType = 'piano' | 'guitar' | 'drums' | 'tabla' | 'violin' | 'flute' |
-    'trumpet' | 'accordion' | 'harp' | 'bell' | 'tuba' | 'keyboard' | 'synth';
+    'trumpet' | 'accordion' | 'harp' | 'bell' | 'tuba' | 'keyboard' | 'synth' |
+    'pad' | 'strings' | 'bass';
 
-// Create instrument-specific synth configurations
-function createInstrumentSynth(instrument: InstrumentType, config: MusicConfig): Tone.PolySynth | Tone.Synth | Tone.MembraneSynth {
+function createInstrumentSynth(instrument: InstrumentType, config: MusicConfig): any {
     let synth: any;
 
     switch (instrument) {
@@ -99,11 +147,35 @@ function createInstrumentSynth(instrument: InstrumentType, config: MusicConfig):
                 oscillator: { type: 'sine' },
                 envelope: {
                     attack: 0.005,
-                    decay: 0.3,
-                    sustain: 0.1,
-                    release: 1.2,
+                    decay: 0.4,
+                    sustain: 0.15,
+                    release: 1.5,
                 },
-            }).toDestination();
+            });
+            break;
+
+        case 'harp':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: {
+                    attack: 0.001,
+                    decay: 1.2,
+                    sustain: 0,
+                    release: 2.0,
+                },
+            });
+            break;
+
+        case 'flute':
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: {
+                    attack: 0.06,
+                    decay: 0.1,
+                    sustain: 0.65,
+                    release: 0.9,
+                },
+            });
             break;
 
         case 'guitar':
@@ -111,372 +183,277 @@ function createInstrumentSynth(instrument: InstrumentType, config: MusicConfig):
                 oscillator: { type: 'triangle' },
                 envelope: {
                     attack: 0.01,
-                    decay: 0.4,
-                    sustain: 0.3,
-                    release: 1.5,
+                    decay: 0.5,
+                    sustain: 0.25,
+                    release: 1.8,
                 },
-            }).toDestination();
-            break;
-
-        case 'drums':
-            synth = new Tone.MembraneSynth({
-                pitchDecay: 0.05,
-                octaves: 6,
-                oscillator: { type: 'sine' },
-                envelope: {
-                    attack: 0.001,
-                    decay: 0.4,
-                    sustain: 0.01,
-                    release: 1.4,
-                },
-            }).toDestination();
-            break;
-
-        case 'tabla':
-            synth = new Tone.MembraneSynth({
-                pitchDecay: 0.02,
-                octaves: 8,
-                oscillator: { type: 'triangle' },
-                envelope: {
-                    attack: 0.001,
-                    decay: 0.2,
-                    sustain: 0.01,
-                    release: 0.8,
-                },
-            }).toDestination();
-            break;
-
-        case 'violin':
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sawtooth' },
-                envelope: {
-                    attack: 0.3,
-                    decay: 0.1,
-                    sustain: 0.9,
-                    release: 1.0,
-                },
-            }).toDestination();
-            break;
-
-        case 'flute':
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sine3' },
-                envelope: {
-                    attack: 0.05,
-                    decay: 0.1,
-                    sustain: 0.6,
-                    release: 0.8,
-                },
-            }).toDestination();
-            break;
-
-        case 'trumpet':
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'square' },
-                envelope: {
-                    attack: 0.05,
-                    decay: 0.2,
-                    sustain: 0.7,
-                    release: 0.6,
-                },
-            }).toDestination();
-            break;
-
-        case 'accordion':
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'square4' },
-                envelope: {
-                    attack: 0.1,
-                    decay: 0.3,
-                    sustain: 0.8,
-                    release: 1.0,
-                },
-            }).toDestination();
-            break;
-
-        case 'harp':
-            synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'triangle3' },
-                envelope: {
-                    attack: 0.001,
-                    decay: 1.0,
-                    sustain: 0.0,
-                    release: 1.5,
-                },
-            }).toDestination();
+            });
             break;
 
         case 'bell':
             synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sine6' },
+                oscillator: { type: 'sine' },
                 envelope: {
                     attack: 0.001,
-                    decay: 1.5,
-                    sustain: 0.0,
-                    release: 2.0,
+                    decay: 1.8,
+                    sustain: 0,
+                    release: 2.5,
                 },
-            }).toDestination();
+            });
             break;
 
-        case 'tuba':
+        case 'pad':
             synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sawtooth4' },
+                oscillator: { type: 'sawtooth' },
                 envelope: {
-                    attack: 0.1,
+                    attack: 0.5,
                     decay: 0.3,
-                    sustain: 0.6,
-                    release: 1.2,
+                    sustain: 0.8,
+                    release: 2.5,
                 },
-            }).toDestination();
+            });
             break;
 
-        case 'keyboard':
+        case 'strings':
             synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'square2' },
+                oscillator: { type: 'sawtooth' },
+                envelope: {
+                    attack: 0.4,
+                    decay: 0.2,
+                    sustain: 0.85,
+                    release: 1.5,
+                },
+            });
+            break;
+
+        case 'bass':
+            synth = new Tone.MonoSynth({
+                oscillator: { type: 'square' },
                 envelope: {
                     attack: 0.01,
-                    decay: 0.4,
-                    sustain: 0.3,
-                    release: 1.0,
+                    decay: 0.3,
+                    sustain: 0.1,
+                    release: 0.6,
                 },
-            }).toDestination();
+                filterEnvelope: {
+                    attack: 0.01,
+                    decay: 0.2,
+                    sustain: 0.3,
+                    release: 0.5,
+                },
+            });
             break;
 
-        case 'synth':
         default:
             synth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: {
-                    type: config.mode === 'major' ? 'sine' : 'triangle',
-                },
+                oscillator: { type: 'sine' },
                 envelope: {
                     attack: 0.1,
                     decay: 0.2,
                     sustain: 0.5,
                     release: 1,
                 },
-            }).toDestination();
-            break;
+            });
     }
 
-    // Set volume based on intensity
-    synth.volume.value = -10 + (config.intensity * 15);
+    // Add reverb for depth
+    const reverb = new Tone.Reverb({ decay: 2.5, wet: 0.3 });
+    const delay = new Tone.FeedbackDelay({ delayTime: '8n', feedback: 0.2, wet: 0.15 });
+
+    synth.chain(reverb, delay, Tone.Destination);
+    synth.volume.value = -12 + (config.intensity * 10);
 
     return synth;
 }
 
-// Select random instrument based on emotion and seed
-function selectInstrument(config: MusicConfig, seed: number): InstrumentType {
-    const instruments: Record<string, InstrumentType[]> = {
-        happy: ['piano', 'guitar', 'harp', 'bell', 'flute', 'accordion'],
-        sad: ['piano', 'violin', 'flute', 'harp', 'accordion'],
-        neutral: ['piano', 'keyboard', 'synth', 'flute'],
-        angry: ['drums', 'guitar', 'trumpet', 'keyboard'],
-        fearful: ['violin', 'piano', 'synth', 'bell'],
-        surprised: ['bell', 'harp', 'trumpet', 'piano'],
-        disgusted: ['tuba', 'drums', 'keyboard'],
+function selectChordProgression(emotion: string): ChordProgression {
+    const emotionMap: Record<string, keyof typeof CHORD_PROGRESSIONS> = {
+        happy: 'uplifting',
+        sad: 'calming',
+        neutral: 'contemplative',
+        angry: 'calming',
+        fearful: 'calming',
+        surprised: 'energizing',
+        disgusted: 'calming',
     };
 
-    // Get instruments suitable for this emotion
-    const emotionInstruments = instruments[config.key] || instruments.neutral;
-
-    // Add tabla for variation (10% chance)
-    if (Math.random() > 0.9) {
-        emotionInstruments.push('tabla');
-    }
-
-    // Select based on seed for consistency within one generation but variety across generations
-    const index = Math.floor(seed * emotionInstruments.length) % emotionInstruments.length;
-    return emotionInstruments[index];
+    const progressionKey = emotionMap[emotion] || 'calming';
+    return CHORD_PROGRESSIONS[progressionKey];
 }
 
-// Create a Tone.js synth based on music configuration with varied instruments
 export function createSynth(config: MusicConfig, seed?: number): any {
-    const generationSeed = seed || (Date.now() + Math.random());
-    const instrument = selectInstrument(config, generationSeed);
+    const instruments = config.instruments || ['piano'];
+    const primaryInstrument = instruments[0] as InstrumentType;
 
-    console.log(`🎵 Generating music with instrument: ${instrument.toUpperCase()}`);
+    console.log(`🎵 Generating professional music with: ${instruments.join(', ').toUpperCase()}`);
 
     return {
-        synth: createInstrumentSynth(instrument, config),
-        instrumentName: instrument
+        synth: createInstrumentSynth(primaryInstrument, config),
+        harmonySynth: instruments.length > 1 ? createInstrumentSynth(instruments[1] as InstrumentType, config) : null,
+        bassSynth: createInstrumentSynth('bass', config),
+        instrumentName: primaryInstrument
     };
 }
 
-
-// Generate a melodic sequence with high variety
-export function generateMelody(config: MusicConfig): { notes: string[], durations: string[] } {
+// Enhanced melody generation with professional patterns
+export function generateMelody(config: MusicConfig, emotion: string): {
+    melody: { notes: string[], durations: string[] },
+    chords: { notes: string[][], durations: string[] },
+    bass: { notes: string[], durations: string[] }
+} {
     const scales: Record<string, string[]> = {
-        C: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
-        Am: ['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4'],
-        Dm: ['D4', 'E4', 'F4', 'G4', 'A4', 'Bb4', 'C5', 'D5'],
-        Em: ['E4', 'F#4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'],
-        G: ['G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F#5', 'G5'],
-        Fm: ['F4', 'G4', 'Ab4', 'Bb4', 'C5', 'Db5', 'Eb5', 'F5'],
+        C: ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'],
+        G: ['G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F#4', 'G4', 'A4', 'B4', 'C5'],
+        Am: ['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
     };
 
     const scale = scales[config.key] || scales.C;
-    const notes: string[] = [];
-    const durations: string[] = [];
+    const chordProg = selectChordProgression(emotion);
 
-    // Create unique seed for this generation
-    const seed = Date.now() + Math.random();
-
-    // Multiple melodic patterns for variety
+    // MELODY GENERATION
     const melodyPatterns = [
-        [0, 2, 4, 2, 0, 2, 4, 7],        // Ascending pattern
-        [0, 4, 7, 4, 0, 2, 4, 0],        // Arpeggio pattern
-        [4, 2, 0, 2, 4, 7, 4, 0],        // Wave pattern
-        [0, 2, 1, 3, 2, 4, 3, 5],        // Stepwise motion
-        [7, 4, 2, 0, 2, 4, 7, 5],        // Descending pattern
-        [0, 3, 5, 3, 0, 4, 7, 4],        // Chord tones
-        [2, 4, 6, 4, 2, 5, 7, 5],        // Higher register
-        [0, 1, 2, 3, 4, 5, 6, 7],        // Scale climb
-        [7, 6, 5, 4, 3, 2, 1, 0],        // Scale descend
-        [0, 4, 0, 5, 0, 7, 0, 4],        // Interval jumps
-        [2, 2, 4, 4, 5, 5, 4, 2],        // Repetitive motif
-        [0, 7, 2, 5, 4, 7, 2, 0],        // Wide intervals
+        [0, 2, 4, 5, 4, 2, 0, -1],
+        [0, 4, 7, 4, 2, 5, 4, 0],
+        [4, 5, 7, 5, 4, 2, 4, 2],
+        [0, 2, 4, 7, 5, 4, 2, 0],
+        [7, 5, 4, 2, 0, 2, 4, 5],
+        [0, 3, 5, 7, 5, 3, 2, 0],
     ];
 
-    // Rhythm patterns for variation
     const rhythmPatterns = [
-        ['4n', '4n', '4n', '4n', '4n', '4n', '4n', '4n'],           // All quarter notes
-        ['8n', '8n', '4n', '8n', '8n', '4n', '4n', '4n'],           // Mixed rhythm
-        ['4n', '8n', '8n', '4n', '4n', '8n', '8n', '4n'],           // Syncopated
-        ['4n', '4n', '2n', '4n', '4n', '2n'],                       // Longer notes
-        ['8n', '8n', '8n', '8n', '4n', '4n', '4n', '4n'],           // Fast start
-        ['4n', '4n', '4n', '8n', '8n', '8n', '8n', '4n'],           // Accelerating
+        ['4n', '4n', '2n', '4n', '4n', '2n'],
+        ['8n', '8n', '4n', '8n', '8n', '4n', '4n', '2n'],
+        ['4n', '8n', '8n', '2n', '4n', '4n', '2n'],
+        ['2n', '4n', '4n', '4n', '4n', '2n'],
     ];
 
-    // Select random pattern based on seed
-    const patternIndex = Math.floor((seed * 7) % melodyPatterns.length);
-    const rhythmIndex = Math.floor((seed * 13) % rhythmPatterns.length);
+    const patternIndex = Math.floor(Math.random() * melodyPatterns.length);
+    const rhythmIndex = Math.floor(Math.random() * rhythmPatterns.length);
 
-    let basePattern = melodyPatterns[patternIndex];
-    let baseRhythm = rhythmPatterns[rhythmIndex];
+    const melodyNotes: string[] = [];
+    const melodyDurations: string[] = [];
 
-    // Add variation to the pattern by randomizing some notes
-    const variedPattern = basePattern.map((note, i) => {
-        // 30% chance to modify the note
-        if (Math.random() > 0.7) {
-            // Move up or down by 1-2 steps
-            const variation = Math.floor(Math.random() * 5) - 2;
-            return Math.max(0, Math.min(7, note + variation));
-        }
-        return note;
-    });
+    // Generate 16-bar melody
+    for (let bar = 0; bar < 16; bar++) {
+        const pattern = melodyPatterns[patternIndex];
+        const rhythm = rhythmPatterns[rhythmIndex];
 
-    // Generate extended pattern by combining and modifying
-    const extendedPattern: number[] = [];
-    for (let i = 0; i < 4; i++) {
-        // Transpose pattern for each iteration
-        const transpose = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
-        variedPattern.forEach(note => {
-            const transposed = note + transpose;
-            extendedPattern.push(Math.max(0, Math.min(7, transposed)));
+        pattern.forEach((scaleIndex, i) => {
+            const octaveVariation = (bar % 4 === 3 && Math.random() > 0.6) ? 7 : 0;
+            const noteIndex = Math.max(0, Math.min(scale.length - 1, scaleIndex + octaveVariation));
+            melodyNotes.push(scale[noteIndex]);
+            melodyDurations.push(rhythm[i % rhythm.length]);
         });
     }
 
-    // Add melodic embellishments
-    extendedPattern.forEach((index, i) => {
-        // Main note
-        notes.push(scale[index % scale.length]);
+    // CHORD GENERATION
+    const chordNotes: string[][] = [];
+    const chordDurations: string[] = [];
 
-        // Choose rhythm based on intensity and randomization
-        let duration: string;
-        if (baseRhythm[i % baseRhythm.length]) {
-            duration = baseRhythm[i % baseRhythm.length];
-        } else if (config.intensity > 0.6) {
-            duration = Math.random() > 0.5 ? '8n' : '16n'; // Faster for high intensity
-        } else {
-            duration = Math.random() > 0.5 ? '4n' : '2n'; // Slower for low intensity
-        }
-        durations.push(duration);
+    for (let i = 0; i < 16; i++) {
+        chordNotes.push(chordProg.chords[i % chordProg.chords.length]);
+        chordDurations.push('1n');
+    }
 
-        // Occasionally add a harmony note (20% chance)
-        if (Math.random() > 0.8 && config.intensity > 0.5) {
-            const harmonyIndex = (index + 2) % scale.length; // Third above
-            notes.push(scale[harmonyIndex]);
-            durations.push(duration);
-        }
+    // BASS LINE GENERATION
+    const bassNotes: string[] = [];
+    const bassDurations: string[] = [];
+
+    chordNotes.forEach(chord => {
+        bassNotes.push(chord[0]);
+        bassDurations.push('2n');
+        bassNotes.push(chord[0]);
+        bassDurations.push('2n');
     });
 
-    // Add a unique signature to each melody - random ending phrase
-    const endingPhrases = [
-        [4, 2, 0],
-        [7, 5, 4],
-        [5, 4, 0],
-        [7, 4, 0],
-        [2, 4, 0],
-    ];
-
-    const endingIndex = Math.floor(Math.random() * endingPhrases.length);
-    endingPhrases[endingIndex].forEach(index => {
-        notes.push(scale[index % scale.length]);
-        durations.push('2n'); // Longer notes for ending
-    });
-
-    return { notes, durations };
+    return {
+        melody: { notes: melodyNotes, durations: melodyDurations },
+        chords: { notes: chordNotes, durations: chordDurations },
+        bass: { notes: bassNotes, durations: bassDurations },
+    };
 }
 
-// Play generated music using Tone.js
+// Enhanced playMusic with full arrangement
 export async function playMusic(music: GeneratedMusic, onProgress?: (progress: number) => void): Promise<void> {
     await Tone.start();
 
-    const synth = createSynth(music.config);
-    const melody = generateMelody(music.config);
+    const { synth, harmonySynth, bassSynth } = createSynth(music.config);
+    const emotionName = music.baseEmotions[0]?.emotion || 'neutral';
+    const { melody, chords, bass } = generateMelody(music.config, emotionName);
 
-    // Set tempo
     Tone.Transport.bpm.value = music.config.tempo;
 
-    let noteIndex = 0;
-    const totalNotes = melody.notes.length;
-    const loopDuration = totalNotes; // measures
-
-    const loop = new Tone.Loop((time) => {
-        const note = melody.notes[noteIndex % totalNotes];
-        const duration = melody.durations[noteIndex % totalNotes];
-
+    // MELODY LOOP
+    let melodyIndex = 0;
+    const melodyLoop = new Tone.Loop((time) => {
+        const note = melody.notes[melodyIndex % melody.notes.length];
+        const duration = melody.durations[melodyIndex % melody.durations.length];
         synth.triggerAttackRelease(note, duration, time);
+        melodyIndex++;
 
-        noteIndex++;
-
-        // Report progress
         if (onProgress) {
-            const progress = (noteIndex / (music.duration / 2)) * 100; // Rough estimate
+            const progress = (melodyIndex / melody.notes.length) * 100;
             onProgress(Math.min(progress, 100));
         }
     }, '4n');
 
-    loop.start(0);
+    // CHORD LOOP (harmony)
+    let chordIndex = 0;
+    const chordLoop = new Tone.Loop((time) => {
+        const chordNotes = chords.notes[chordIndex % chords.notes.length];
+        const duration = chords.durations[chordIndex % chords.durations.length];
+
+        if (harmonySynth) {
+            chordNotes.forEach(note => {
+                harmonySynth.triggerAttackRelease(note, duration, time);
+            });
+        }
+        chordIndex++;
+    }, '1m');
+
+    // BASS LOOP
+    let bassIndex = 0;
+    const bassLoop = new Tone.Loop((time) => {
+        const note = bass.notes[bassIndex % bass.notes.length];
+        const duration = bass.durations[bassIndex % bass.durations.length];
+        bassSynth.triggerAttackRelease(note, duration, time);
+        bassIndex++;
+    }, '2n');
+
+    melodyLoop.start(0);
+    chordLoop.start(0);
+    bassLoop.start(0);
     Tone.Transport.start();
 
-    // Play for the specified duration
     await new Promise((resolve) => {
         setTimeout(() => {
-            loop.stop();
+            melodyLoop.stop();
+            chordLoop.stop();
+            bassLoop.stop();
             Tone.Transport.stop();
             synth.dispose();
+            if (harmonySynth) harmonySynth.dispose();
+            bassSynth.dispose();
             resolve(true);
         }, music.duration * 1000);
     });
 }
 
-// Stop all audio
 export function stopMusic() {
     Tone.Transport.stop();
     Tone.Transport.cancel();
 }
 
-// Get a friendly description of the music
 export function getMusicDescription(config: MusicConfig): string {
     const tempoDesc =
         config.tempo < 80
-            ? 'slow and calming'
-            : config.tempo < 110
-                ? 'moderate and balanced'
-                : 'upbeat and energizing';
+            ? 'slow and deeply calming'
+            : config.tempo < 100
+                ? 'gentle and soothing'
+                : 'uplifting and energizing';
 
-    const moodDesc = config.mode === 'major' ? 'uplifting' : 'contemplative';
+    const moodDesc = config.mode === 'major' ? 'positive and hopeful' : 'contemplative';
+    const therapeuticIntent = config.tempo < 90 ? 'designed to promote relaxation and inner peace' : 'crafted to gently elevate your mood';
 
-    return `A ${tempoDesc}, ${moodDesc} composition in ${config.key} ${config.mode}`;
+    return `A ${tempoDesc}, ${moodDesc} composition in ${config.key} ${config.mode}, ${therapeuticIntent}. Features rich harmonies, melodic development, and professional orchestration.`;
 }

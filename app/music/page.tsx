@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getLocalStorage, setLocalStorage } from '@/lib/utils/storage';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Sparkles, Music as MusicIcon, Loader, CheckCircle } from 'lucide-react';
@@ -18,7 +19,7 @@ export default function MusicPage() {
 
     useEffect(() => {
         // Load emotion data from localStorage
-        const data = localStorage.getItem('currentEmotionData');
+        const data = getLocalStorage('currentEmotionData');
         if (!data) {
             router.push('/detect-emotion');
             return;
@@ -27,10 +28,13 @@ export default function MusicPage() {
         const emotionResult: EmotionResult = JSON.parse(data);
         setEmotionData(emotionResult);
 
-        // Generate music
+        // Generate music with heart rate if available
         setIsGenerating(true);
         setTimeout(async () => {
-            const generatedMusic = await generateMusic([emotionResult.aggregated]);
+            const generatedMusic = await generateMusic(
+                [emotionResult.aggregated],
+                emotionResult.heartRate // Pass heart rate for therapeutic adjustment
+            );
             setMusic(generatedMusic);
             setIsGenerating(false);
 
@@ -40,10 +44,10 @@ export default function MusicPage() {
     }, [router]);
 
     const updateSessionWithMusic = () => {
-        const sessionId = localStorage.getItem('currentSessionId');
+        const sessionId = getLocalStorage('currentSessionId');
         if (!sessionId) return;
 
-        const storedSessions = localStorage.getItem('sessionHistory');
+        const storedSessions = getLocalStorage('sessionHistory');
         if (!storedSessions) return;
 
         const sessions = JSON.parse(storedSessions);
@@ -51,7 +55,10 @@ export default function MusicPage() {
 
         if (sessionIndex !== -1) {
             sessions[sessionIndex].musicGenerated = true;
-            localStorage.setItem('sessionHistory', JSON.stringify(sessions));
+            setLocalStorage('sessionHistory', JSON.stringify(sessions));
+
+            // Dispatch event to notify history page
+            window.dispatchEvent(new Event('sessionHistoryUpdated'));
         }
     };
 
@@ -61,7 +68,7 @@ export default function MusicPage() {
 
     const handleContinueToFeedback = () => {
         if (music) {
-            localStorage.setItem('currentMusic', JSON.stringify(music));
+            setLocalStorage('currentMusic', JSON.stringify(music));
             router.push('/feedback');
         }
     };

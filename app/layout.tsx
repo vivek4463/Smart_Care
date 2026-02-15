@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import VoiceAssistant from '@/components/VoiceAssistant';
+import { PreferencesProvider } from '@/context/PreferencesContext';
+import { MoodProvider } from '@/context/MoodContext';
+import MoodBackground from '@/components/MoodBackground';
 
 const inter = Inter({
     subsets: ['latin'],
@@ -22,8 +25,13 @@ export default function RootLayout({
     return (
         <html lang="en" className={inter.variable}>
             <body className="animated-bg min-h-screen">
-                {children}
-                <VoiceAssistant />
+                <PreferencesProvider>
+                    <MoodProvider>
+                        <MoodBackground />
+                        {children}
+                        <VoiceAssistant />
+                    </MoodProvider>
+                </PreferencesProvider>
             </body>
         </html>
     );

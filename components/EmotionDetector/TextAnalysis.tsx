@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, CheckCircle, Loader } from 'lucide-react';
-import { analyzeTextEmotion } from '@/lib/emotionDetection';
+import { MessageSquare, CheckCircle, Loader, Sparkles } from 'lucide-react';
+import { analyzeTextEmotionML } from '@/lib/emotionDetection';
 import { EmotionScore } from '@/lib/types';
 
 interface TextAnalysisProps {
@@ -20,7 +20,7 @@ export default function TextAnalysis({ onComplete }: TextAnalysisProps) {
 
         setIsAnalyzing(true);
         try {
-            const emotions = await analyzeTextEmotion(text);
+            const emotions = await analyzeTextEmotionML(text);
             setResults(emotions);
             setIsAnalyzing(false);
 

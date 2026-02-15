@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { setLocalStorage, getLocalStorage } from '@/lib/utils/storage';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Sparkles } from 'lucide-react';
@@ -11,6 +12,7 @@ import HeartRateMonitor from '@/components/EmotionDetector/HeartRateMonitor';
 import EmotionResults from '@/components/EmotionResults';
 import { EmotionScore, DetectionStep, EmotionResult } from '@/lib/types';
 import { aggregateEmotions } from '@/lib/emotionDetection';
+import { useMood } from '@/context/MoodContext';
 
 const steps: DetectionStep[] = ['face', 'voice', 'text', 'heartrate', 'analysis'];
 
@@ -24,6 +26,7 @@ const stepTitles: Record<DetectionStep, string> = {
 
 export default function DetectEmotionPage() {
     const router = useRouter();
+    const { setMood } = useMood();
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [emotionData, setEmotionData] = useState<Partial<EmotionResult>>({});
 
@@ -59,9 +62,9 @@ export default function DetectEmotionPage() {
     const handleGenerateMusic = () => {
         // Store emotion data for music generation
         const aggregated = aggregateEmotions(
-            emotionData.face,
-            emotionData.voice,
-            emotionData.text
+            emotionData.face ?? null,
+            emotionData.voice ?? null,
+            emotionData.text ?? null
         );
 
         const emotionWithTimestamp = {
@@ -70,7 +73,12 @@ export default function DetectEmotionPage() {
             timestamp: new Date(),
         };
 
-        localStorage.setItem('currentEmotionData', JSON.stringify(emotionWithTimestamp));
+        // Set mood in context for UI adaptation
+        if (aggregated) {
+            setMood(aggregated.emotion);
+        }
+
+        setLocalStorage('currentEmotionData', JSON.stringify(emotionWithTimestamp));
 
         // Save to session history (wrap aggregated in array as saveSession expects EmotionScore[])
         saveSession([aggregated], emotionData.heartRate);
@@ -80,7 +88,7 @@ export default function DetectEmotionPage() {
 
     const saveSession = (emotions: EmotionScore[], heartRate?: number) => {
         // Get existing sessions
-        const storedSessions = localStorage.getItem('sessionHistory');
+        const storedSessions = getLocalStorage('sessionHistory');
         const sessions = storedSessions ? JSON.parse(storedSessions) : [];
 
         // Get primary emotion
@@ -103,8 +111,11 @@ export default function DetectEmotionPage() {
         sessions.push(newSession);
 
         // Save back to localStorage
-        localStorage.setItem('sessionHistory', JSON.stringify(sessions));
-        localStorage.setItem('currentSessionId', newSession.id); // Store current session ID
+        setLocalStorage('sessionHistory', JSON.stringify(sessions));
+        setLocalStorage('currentSessionId', newSession.id); // Store current session ID
+
+        // Dispatch custom event to notify history page of update (same tab)
+        window.dispatchEvent(new Event('sessionHistoryUpdated'));
     };
 
     return (

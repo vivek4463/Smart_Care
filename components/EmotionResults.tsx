@@ -12,9 +12,9 @@ interface EmotionResultsProps {
 
 export default function EmotionResults({ emotionData, onGenerateMusic }: EmotionResultsProps) {
     const aggregated = aggregateEmotions(
-        emotionData.face,
-        emotionData.voice,
-        emotionData.text
+        emotionData.face ?? null,
+        emotionData.voice ?? null,
+        emotionData.text ?? null
     );
 
     return (
