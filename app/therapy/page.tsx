@@ -50,7 +50,38 @@ export default function TherapySessionPage() {
 
     // Check consent on mount
     useEffect(() => {
-        const profile = loadUserProfile(userId);
+        let profile = loadUserProfile(userId);
+
+        if (!profile) {
+            console.log('Creating default user profile for new user');
+            profile = {
+                userId,
+                baseline: { calibratedAt: new Date() },
+                preferences: {
+                    tempoRange: [60, 120],
+                    preferredInstruments: ['piano', 'harp', 'pad'],
+                    intensityPreference: 0.5,
+                    avoidedEmotions: []
+                },
+                history: {
+                    emotionTransitions: [],
+                    sessionOutcomes: [],
+                    improvementScores: []
+                },
+                rl: {
+                    qTable: new Map(),
+                    explorationRate: 0.3,
+                    totalUpdates: 0,
+                    lastUpdatedAt: new Date()
+                },
+                dataRetentionDays: 90,
+                consentGiven: false,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            } as UserProfile;
+            saveUserProfile(profile);
+        }
+
         setUserProfile(profile);
 
         if (!hasConsent(userId, 'emotionDetection')) {
@@ -105,7 +136,16 @@ export default function TherapySessionPage() {
     };
 
     const handleStartTherapy = async () => {
-        if (!panasPre || !userProfile) return;
+        if (!panasPre) {
+            console.error('❌ PANAS Pre not completed');
+            alert('Please complete the pre-session questionnaire first.');
+            return;
+        }
+        if (!userProfile) {
+            console.error('❌ User profile not found');
+            alert('User profile error. Please refresh the page.');
+            return;
+        }
 
         setIsProcessing(true);
 
