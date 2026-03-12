@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Fix for Turbopack root finding in IDE
+  // experimental: { 
+  //   turbopack: { root: '.' } 
+  // }
 };
 
 export default nextConfig;
