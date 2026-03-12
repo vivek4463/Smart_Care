@@ -3,19 +3,24 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Build-safe no-op proxy to prevent crashes during SSR/Prerendering when env vars are missing
+// Build-safe no-op to prevent crashes during SSR/Prerendering when env vars are missing
 const createNoOpClient = () => {
-  const noop = () => Promise.resolve({ data: {}, error: null });
-  return new Proxy({}, {
-    get: (_, prop) => {
-      if (prop === 'auth') {
-        return new Proxy({}, {
-          get: () => noop
-        });
-      }
-      return noop;
-    }
-  }) as any;
+  const chain: any = () => chain;
+  chain.then = (cb: any) => Promise.resolve({ data: { user: null }, error: null }).then(cb);
+  
+  const client: any = {
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithPassword: () => Promise.resolve({ data: {}, error: null }),
+      signUp: () => Promise.resolve({ data: {}, error: null }),
+      signOut: () => Promise.resolve({ data: {}, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    from: () => chain,
+    channel: () => ({ subscribe: () => {} }),
+  };
+
+  return client;
 };
 
 export const supabase = (supabaseUrl && supabaseAnonKey) 
