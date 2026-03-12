@@ -1,15 +1,36 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, TrendingUp, History, Download } from "lucide-react";
+import { Calendar, TrendingUp, History, Download, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { authService } from "@/lib/authService";
+import { sessionService } from "@/lib/sessionService";
 
 export default function AnalyticsOverview() {
-  const history = [
-    { date: "Mar 12", emotion: "Sadness", therapy: "Piano Resonance", feedback: "Positive", color: "text-brand-cyan" },
-    { date: "Mar 11", emotion: "Stress", therapy: "Pad Frequency", feedback: "Negative", color: "text-red-400" },
-    { date: "Mar 10", emotion: "Joy", therapy: "Synth Pulse", feedback: "Positive", color: "text-brand-mint" },
-    { date: "Mar 09", emotion: "Calm", therapy: "Harp Harmony", feedback: "Positive", color: "text-purple-400" },
-  ];
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        const historyData = await sessionService.getRecentSessions(user.id);
+        setSessions(historyData);
+      }
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
+
+  const getMoodColor = (mood: string) => {
+    if (!mood) return 'text-white/40';
+    switch(mood.toLowerCase()) {
+      case 'happy': return 'text-brand-mint';
+      case 'sad': return 'text-brand-cyan';
+      case 'stress': return 'text-red-400';
+      default: return 'text-white/40';
+    }
+  };
 
   const weeklyData = [
     { day: "Mon", value: 40, mood: "Sad" },
@@ -20,6 +41,12 @@ export default function AnalyticsOverview() {
     { day: "Sat", value: 90, mood: "Joy" },
     { day: "Sun", value: 75, mood: "Calm" },
   ];
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center p-20">
+      <Loader2 className="w-8 h-8 text-brand-cyan animate-spin" />
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
@@ -45,28 +72,36 @@ export default function AnalyticsOverview() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {history.map((item, i) => (
-                <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
+              {sessions.length > 0 ? sessions.map((item, i) => (
+                <tr key={item.id || i} className="group hover:bg-white/[0.02] transition-colors">
                   <td className="py-4">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-white">{item.date}</span>
-                      <span className="text-[9px] text-white/20 font-medium">{item.therapy}</span>
+                      <span className="text-xs font-bold text-white">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-[9px] text-white/20 font-medium uppercase tracking-[0.1em]">
+                        {item.heart_rate} BPM Average
+                      </span>
                     </div>
                   </td>
                   <td className="py-4">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${item.color}`}>
-                      {item.emotion}
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${getMoodColor(item.final_emotion)}`}>
+                      {item.final_emotion}
                     </span>
                   </td>
                   <td className="py-4 text-right pr-4">
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                      item.feedback === 'Positive' ? 'bg-brand-mint/10 text-brand-mint' : 'bg-red-500/10 text-red-500'
-                    }`}>
-                      {item.feedback === 'Positive' ? '✓' : '✗'}
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-brand-mint/10 text-brand-mint">
+                      ✓
                     </span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-[10px] text-white/20 font-bold uppercase tracking-widest">
+                    No session data available
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

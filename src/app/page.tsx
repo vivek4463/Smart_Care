@@ -44,7 +44,10 @@ export default function LandingPage() {
                   Enter Therapy <ArrowRight className="w-6 h-6" />
                 </motion.button>
               </Link>
-              <button className="px-10 py-5 glass-morphism text-white/80 font-bold rounded-2xl text-xl hover:bg-white/5 transition-all border border-white/10">
+              <button 
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-10 py-5 glass-morphism text-white/80 font-bold rounded-2xl text-xl hover:bg-white/5 transition-all border border-white/10"
+              >
                 The Science
               </button>
             </div>
@@ -98,7 +101,7 @@ export default function LandingPage() {
       </section>
 
       {/* Refined Features */}
-      <section className="relative z-10 w-full max-w-7xl px-6 py-24 mx-auto">
+      <section id="features" className="relative z-10 w-full max-w-7xl px-6 py-24 mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <FeatureCard 
             icon={<Brain className="w-10 h-10" />}

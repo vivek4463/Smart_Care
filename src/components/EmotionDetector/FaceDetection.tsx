@@ -2,48 +2,73 @@
 
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
-import * as tf from "@tensorflow/tfjs";
+import * as faceapi from "face-api.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, AlertCircle, RefreshCw } from "lucide-react";
 
-const EMOTIONS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"];
-
 export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected?: (emotion: string) => void }) {
   const webcamRef = useRef<Webcam>(null);
-  const [model, setModel] = useState<tf.LayersModel | null>(null);
-  const [emotion, setEmotion] = useState<string>("Detecting...");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [emotion, setEmotion] = useState<string>("Detecting...");
+  const [confidence, setConfidence] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadModel = async () => {
+    const loadModels = async () => {
       try {
-        await tf.ready();
-        // Model loading infrastructure ready
-        setTimeout(() => setIsLoaded(true), 1500); // Professional delay for 'calibration'
+        const MODEL_URL = "/models";
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        ]);
+        setIsLoaded(true);
       } catch (err) {
-        console.error("TF.js init failed:", err);
-        setIsLoaded(true); 
+        console.error("Face-api models load failed:", err);
+        setError("Failed to load neural models");
       }
     };
-    loadModel();
+    loadModels();
   }, []);
 
   useEffect(() => {
-    if (!isLoaded || !webcamRef.current) return;
+    if (!isLoaded) return;
 
     const interval = setInterval(async () => {
       if (webcamRef.current && webcamRef.current.video?.readyState === 4) {
-        // Simulate detection logic for now to ensure UI works
-        // Real implementation would involve:
-        // 1. Capture image from webcam
-        // 2. Preprocess (grayscale, resize to 48x48)
-        // 3. Predict using model
-        const randomEmotion = EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)];
-        setEmotion(randomEmotion);
-        if (onEmotionDetected) onEmotionDetected(randomEmotion);
+        const video = webcamRef.current.video;
+        
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceExpressions();
+
+        if (detection) {
+          // Find the expression with highest probability
+          const expressions = detection.expressions;
+          const bestMatch = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
+          
+          const rawEmotion = bestMatch[0];
+          const score = bestMatch[1];
+
+          // Map face-api emotions to our app's set
+          const emotionMap: Record<string, string> = {
+            neutral: "Neutral",
+            happy: "Happy",
+            sad: "Sad",
+            angry: "Stress",
+            fearful: "Stress",
+            disgusted: "Stress",
+            surprised: "Happy"
+          };
+
+          const mappedEmotion = emotionMap[rawEmotion] || "Neutral";
+          
+          setEmotion(mappedEmotion);
+          setConfidence(Math.round(score * 100));
+          if (onEmotionDetected) onEmotionDetected(mappedEmotion);
+        }
       }
-    }, 3000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [isLoaded, onEmotionDetected]);
@@ -61,75 +86,62 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
               ref={webcamRef}
               audio={false}
               screenshotFormat="image/jpeg"
+              videoConstraints={{
+                width: 640,
+                height: 480,
+                facingMode: "user"
+              }}
               className="absolute inset-0 w-full h-full object-cover"
             />
             
-            {/* Face Mesh Overlay Simulation */}
-            <AnimatePresence>
-              {model && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute inset-0 pointer-events-none"
+            <div className="absolute top-3 left-3 z-20">
+              <div className="px-3 py-1 rounded-full glass-morphism text-[10px] font-bold text-brand-cyan flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
+                NEURAL FEED ACTIVE
+              </div>
+            </div>
+
+            <div className="absolute bottom-3 right-3 z-20">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={emotion}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="px-4 py-2 rounded-xl bg-brand-cyan text-brand-teal font-extrabold text-sm shadow-lg shadow-brand-cyan/20"
                 >
-                  <svg className="w-full h-full text-brand-cyan/30">
-                    {/* Random mesh dots for demo effect */}
-                    {Array.from({ length: 20 }).map((_, i) => (
-                      <motion.circle 
-                        key={i}
-                        cx={`${20 + Math.random() * 60}%`}
-                        cy={`${20 + Math.random() * 60}%`}
-                        r="1.5"
-                        fill="currentColor"
-                        animate={{ opacity: [0.2, 0.8, 0.2] }}
-                        transition={{ repeat: Infinity, duration: 2, delay: i * 0.1 }}
-                      />
-                    ))}
-                  </svg>
+                  {emotion.toUpperCase()}
                 </motion.div>
-              )}
-            </AnimatePresence>
+              </AnimatePresence>
+            </div>
           </>
         )}
-
-        <div className="absolute top-3 left-3 z-20">
-          <div className="px-3 py-1 rounded-full glass-morphism text-[10px] font-bold text-brand-cyan flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
-            LIVE FEED
+        
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 backdrop-blur-sm z-30">
+            <div className="flex items-center gap-2 text-white font-bold bg-red-600 px-4 py-2 rounded-xl">
+              <AlertCircle className="w-5 h-5" />
+              {error}
+            </div>
           </div>
-        </div>
-
-        <div className="absolute bottom-3 right-3 z-20">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={emotion}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="px-4 py-2 rounded-xl bg-brand-cyan text-brand-teal font-extrabold text-sm shadow-lg shadow-brand-cyan/20"
-            >
-              {emotion.toUpperCase()}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        )}
       </div>
 
       <div className="w-full space-y-4">
         <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Confidence Score</span>
-          <div className="text-xl md:text-2xl font-black text-brand-cyan">94.8%</div>
+          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Signal Confidence</span>
+          <div className="text-xl md:text-2xl font-black text-brand-cyan">{confidence}%</div>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Emotion State</span>
-          <div className="text-xl md:text-2xl font-black text-brand-mint italic uppercase">{emotion || "Detecting..."}</div>
+          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Detected Resonance</span>
+          <div className="text-xl md:text-2xl font-black text-brand-mint italic uppercase">{emotion || "Scanning..."}</div>
         </div>
       </div>
-
 
       <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/5">
         <Camera className="w-5 h-5 text-brand-cyan mt-1" />
         <p className="text-sm text-white/50 leading-relaxed">
-          Our AI scans 68 facial landmarks to detect micro-expressions. This data is processed locally on your device for maximum privacy.
+          Real-time biometric extraction via tiny-face neural net. Expression mapping synchronized with therapeutic frequency engine.
         </p>
       </div>
     </div>

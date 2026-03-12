@@ -20,7 +20,7 @@ create table user_preferences (
   updated_at timestamp with time zone default now()
 );
 
--- 3. Therapy Sessions
+-- 3. Therapy Sessions (Legacy/Alternate)
 create table therapy_sessions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
@@ -31,6 +31,19 @@ create table therapy_sessions (
   average_heart_rate float,
   satisfaction_score int,
   music_style_generated text,
+  created_at timestamp with time zone default now()
+);
+
+-- 3b. Active Sessions Table (Used by App)
+create table sessions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  face_emotion text,
+  voice_emotion text,
+  text_sentiment text,
+  heart_rate float,
+  final_emotion text,
+  confidence float,
   created_at timestamp with time zone default now()
 );
 
@@ -65,6 +78,11 @@ create policy "Users can insert own sessions" on therapy_sessions for insert wit
 -- Biometrics: Linked to sessions
 create policy "Users can view own biometric data" on biometric_logs for select 
 using (exists (select 1 from therapy_sessions where therapy_sessions.id = session_id and therapy_sessions.user_id = auth.uid()));
+
+-- Active Sessions: Users can only see and edit their own sessions
+alter table sessions enable row level security;
+create policy "Users can view own active sessions" on sessions for select using (auth.uid() = user_id);
+create policy "Users can insert own active sessions" on sessions for insert with check (auth.uid() = user_id);
 
 -- FUNCTIONS & TRIGGERS
 

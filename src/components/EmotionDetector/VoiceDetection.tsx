@@ -33,25 +33,32 @@ export default function VoiceDetection({ onVoiceEmotionDetected }: { onVoiceEmot
         analyser.getByteFrequencyData(dataArray);
         
         let sum = 0;
+        let frequencyVariance = 0;
         for (let i = 0; i < dataArray.length; i++) {
           sum += dataArray[i];
+          if (i > 0) frequencyVariance += Math.abs(dataArray[i] - dataArray[i-1]);
         }
         const average = sum / dataArray.length;
+        const jitter = frequencyVariance / dataArray.length;
+        
         setVolume(average);
 
-        // Improved prosody analysis (pitch/energy estimation)
-        if (average > 60) {
-          setEmotion("Excited");
-          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Excited");
-        } else if (average > 40) {
-          setEmotion("Energetic");
-          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Energetic");
-        } else if (average > 25) {
-          setEmotion("Stressed");
-          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Stressed");
-        } else if (average > 5) {
-          setEmotion("Calm");
-          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Calm");
+        // Prosody analysis based on Energy (volume) + Jitter (spectral change)
+        if (average > 10) {
+          if (jitter > 30 && average > 40) {
+            setEmotion("Excited");
+          } else if (jitter > 20) {
+            setEmotion("Stressed");
+          } else if (average > 30) {
+            setEmotion("Energetic");
+          } else {
+            setEmotion("Calm");
+          }
+          
+          if (onVoiceEmotionDetected) {
+            const currentEmotion = average > 40 && jitter > 30 ? "Excited" : (jitter > 20 ? "Stressed" : "Calm");
+            onVoiceEmotionDetected(currentEmotion);
+          }
         } else {
           setEmotion("Silent");
         }

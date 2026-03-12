@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { authService } from "@/lib/authService";
 
 // Components
@@ -17,6 +17,14 @@ import FeedbackSection from "@/components/dashboard/FeedbackSection";
 import AnalyticsOverview from "@/components/dashboard/AnalyticsOverview";
 import SystemStatusPanel from "@/components/dashboard/SystemStatusPanel";
 import VoiceAssistant from "@/components/VoiceAssistant";
+import QuickActions from "@/components/dashboard/QuickActions";
+import MobileNav from "@/components/dashboard/MobileNav";
+import SessionHistory from "@/components/dashboard/SessionHistory";
+import DetailedAnalytics from "@/components/dashboard/DetailedAnalytics";
+import TherapyAnalytics from "@/components/dashboard/TherapyAnalytics";
+import PremiumUpgradeModal from "@/components/dashboard/PremiumUpgradeModal";
+import { getFinalEmotion } from "@/lib/emotionFusion";
+import { sessionService } from "@/lib/sessionService";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -24,6 +32,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [showTherapy, setShowTherapy] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const router = useRouter();
 
   // Multi-modal state
@@ -67,40 +78,82 @@ export default function DashboardPage() {
     setDetectionData(prev => ({ ...prev, [type]: value }));
   };
 
-  const performAnalysis = () => {
+  const performAnalysis = async () => {
     setIsAnalyzing(true);
-    // Simulate complex multi-modal fusion logic
-    setTimeout(() => {
-      // Logic: Weighted average of inputs
-      // For demo, we'll derive based on provided inputs or fallback to a professional mock
-      const inputs = [detectionData.face, detectionData.voice, detectionData.text].filter(Boolean);
-      let detected = "Calm";
-      if (inputs.includes("Stress") || inputs.includes("Sadness") || inputs.includes("Sad")) {
-        detected = "Sadness";
-      } else if (inputs.includes("Joy") || inputs.includes("Happy")) {
-        detected = "Joy";
-      }
-
-      setFusionResult({
-        finalEmotion: detected,
-        confidence: 87 + Math.floor(Math.random() * 8),
+    
+    setTimeout(async () => {
+      const result = getFinalEmotion(detectionData);
+      
+      const finalResult = {
+        finalEmotion: result.finalEmotion,
+        confidence: result.confidence,
         probabilities: {
-          "Joy": detected === "Joy" ? 75 : 10,
-          "Sadness": detected === "Sadness" ? 82 : 12,
+          "Joy": result.finalEmotion === "Happy" ? 85 : 10,
+          "Sadness": result.finalEmotion === "Sad" ? 82 : 12,
           "Anger": 8,
-          "Stress": detected === "Stress" ? 65 : 15,
-          "Calm": detected === "Calm" ? 90 : 20,
+          "Stress": result.finalEmotion === "Stress" ? 75 : 15,
+          "Calm": result.finalEmotion === "Calm" ? 90 : 20,
           "Fear": 5,
           "Neutral": 10
         }
-      });
+      };
+
+      setFusionResult(finalResult);
+
+      // Save to Supabase for "Real-world Product" persistence
+      if (user?.id) {
+        await sessionService.saveSession({
+          user_id: user.id,
+          face_emotion: detectionData.face,
+          voice_emotion: detectionData.voice,
+          text_sentiment: detectionData.text,
+          heart_rate: Number(detectionData.heartRate) || 0,
+          final_emotion: result.finalEmotion,
+          confidence: result.confidence
+        });
+      }
+
       setIsAnalyzing(false);
       setShowResults(true);
     }, 2500);
   };
 
+  const startSession = () => {
+    setShowTherapy(true);
+    setTimeout(() => {
+      scrollToAnalysis();
+    }, 100);
+  };
+
+  const handleMoodBoost = () => {
+    setFusionResult({
+      finalEmotion: "Excited",
+      confidence: 100,
+      probabilities: {
+        "Joy": 95,
+        "Excited": 95,
+        "Neutral": 5
+      }
+    });
+    setShowResults(true);
+    setShowTherapy(false); // Hide the detection grid if it's open
+    
+    // Smooth scroll to player
+    setTimeout(() => {
+        const element = document.getElementById("step-03-therapy");
+        if (element) element.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
+  const scrollToAnalysis = () => {
+    const element = document.getElementById("step-01-acquisition");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   if (isLoading) return (
-    <div className="min-h-screen bg-gradient-main flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-main flex items-center justify-center" suppressHydrationWarning>
       <Loader2 className="w-16 h-16 text-brand-cyan animate-spin" />
     </div>
   );
@@ -108,115 +161,274 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <main className="flex h-screen bg-gradient-main overflow-hidden">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+    <main className="flex h-screen bg-gradient-main overflow-hidden" suppressHydrationWarning>
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onLogout={handleLogout}
+        onToggleNotifications={() => setShowNotifications(!showNotifications)}
+        onUpgradeClick={() => setShowUpgradeModal(true)}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Decorative Orbs */}
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-mint/5 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Top Gradient Header (Mobile Logo) */}
-        <div className="lg:hidden p-4 border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-brand-cyan flex items-center justify-center text-brand-teal font-black text-xs">SC</div>
-                <span className="text-lg font-black text-white italic tracking-tighter">SMART CARE</span>
+        {/* Premium Mobile Header */}
+        <div className="lg:hidden px-6 py-6 border-b border-white/5 flex items-center justify-between glass-morphism sticky top-0 z-40">
+            <div className="flex items-center gap-3">
+                <motion.div 
+                  whileHover={{ rotate: 15 }}
+                  className="w-10 h-10 rounded-xl bg-brand-cyan flex items-center justify-center text-brand-teal font-black text-sm shadow-[0_0_20px_rgba(0,242,255,0.4)]"
+                >
+                  SC
+                </motion.div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-black text-white italic tracking-tighter leading-none">SMART CARE</span>
+                  <span className="text-[8px] text-brand-cyan/60 font-bold uppercase tracking-[0.3em]">Holographic Interface</span>
+                </div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10" />
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-2 rounded-full bg-brand-mint animate-pulse shadow-[0_0_10px_#00ffcc]" />
+              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                <User className="w-5 h-5 text-white/20" />
+              </div>
+            </div>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10">
           <div className="max-w-7xl mx-auto space-y-12">
             
-            {/* Header Status */}
-            <SystemStatusPanel />
+            {activeTab === "dashboard" && (
+              <>
+                {/* Header Status */}
+                <SystemStatusPanel />
 
-            {/* Step 01: Multi-modal Input */}
-            <section className="space-y-6">
-              <div className="flex items-center gap-4">
-                <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">01</span>
-                <div>
-                   <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Emotional Inputs</h2>
-                   <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acquisition of biological signals</p>
+                {/* Welcome & Quick Actions */}
+                <div className="space-y-4">
+                  <div className="flex flex-col">
+                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
+                      Welcome Back, <span className="text-brand-cyan">{user?.email?.split('@')[0] || 'User'}</span>
+                    </h1>
+                    <p className="text-sm text-white/30 font-bold uppercase tracking-[0.2em] mt-2">Ready to align your neural frequency?</p>
+                  </div>
                 </div>
-              </div>
-              <EmotionGrid onDetectionUpdate={updateDetection} />
-            </section>
 
-            {/* Step 02: Analysis & Fusion */}
-            <section className="space-y-6">
-              <AnalysisControl onAnalyze={performAnalysis} isAnalyzing={isAnalyzing} />
-              
-              <AnimatePresence>
-                {showResults && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="space-y-10"
-                  >
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                      <ResultsPanel 
-                        finalEmotion={fusionResult.finalEmotion} 
-                        confidence={fusionResult.confidence}
-                        probabilities={fusionResult.probabilities}
-                      />
-                      <div className="h-full">
-                         <VoiceAssistant currentMood={fusionResult.finalEmotion} />
+                <QuickActions 
+                  onStartTherapy={startSession} 
+                  onMoodBoost={handleMoodBoost}
+                  setActiveTab={setActiveTab} 
+                />
+
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="premium-card p-6 border-brand-cyan/20 bg-brand-cyan/5"
+                    >
+                      <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Neural Alerts</h3>
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan" />
+                            <p className="text-[10px] text-white/60 font-medium">Session recorded successfully. Your history has been updated.</p>
+                         </div>
+                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-mint" />
+                            <p className="text-[10px] text-white/60 font-medium">Weekly resonance report is now available in Analytics.</p>
+                         </div>
                       </div>
-                    </div>
-                    
-                    <FusionExplanation 
-                      inputs={detectionData} 
-                      finalEmotion={fusionResult.finalEmotion} 
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </section>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-            {/* Step 03: Therapeutic Response */}
-            <AnimatePresence>
-              {showResults && (
-                <motion.section 
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-10 pt-10 border-t border-white/5"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="w-12 h-12 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center text-brand-mint font-black italic">02</span>
-                    <div>
-                      <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Therapeutic Synthesis</h2>
-                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Harmonic Frequency Injection</p>
-                    </div>
-                  </div>
+                {/* Step 01: Multi-modal Input - Hidden until session start */}
+                <AnimatePresence>
+                  {showTherapy && (
+                    <motion.section 
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      id="step-01-acquisition" 
+                      className="space-y-6 pt-10 border-t border-white/5"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">01</span>
+                        <div>
+                           <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Emotional Inputs</h2>
+                           <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acquisition of biological signals</p>
+                        </div>
+                      </div>
+                      <EmotionGrid onDetectionUpdate={updateDetection} />
+                      
+                      <div className="pt-6">
+                         <AnalysisControl onAnalyze={performAnalysis} isAnalyzing={isAnalyzing} />
+                      </div>
+                    </motion.section>
+                  )}
+                </AnimatePresence>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-                    <div className="xl:col-span-3">
-                      <MusicPlayer emotion={fusionResult.finalEmotion} />
-                    </div>
-                    <div className="xl:col-span-2">
-                       <FeedbackSection />
-                    </div>
-                  </div>
-                </motion.section>
-              )}
-            </AnimatePresence>
+                {/* Step 02: Analysis & Fusion */}
+                <section className="space-y-6">
+                  
+                  <AnimatePresence>
+                    {showResults && (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="space-y-10"
+                      >
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                          <ResultsPanel 
+                            finalEmotion={fusionResult.finalEmotion} 
+                            confidence={fusionResult.confidence}
+                            probabilities={fusionResult.probabilities}
+                          />
+                          <div className="h-full">
+                             <VoiceAssistant currentMood={fusionResult.finalEmotion} />
+                          </div>
+                        </div>
+                        
+                        <FusionExplanation 
+                          inputs={detectionData} 
+                          finalEmotion={fusionResult.finalEmotion} 
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </section>
 
-            {/* Step 04: Analytics & Insights */}
-            <section className="space-y-10 pt-10 border-t border-white/5">
+                {/* Step 03: Therapeutic Response */}
+                <AnimatePresence>
+                  {showResults && (
+                    <motion.section 
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      id="step-03-therapy"
+                      className="space-y-10 pt-10 border-t border-white/5"
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="w-12 h-12 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center text-brand-mint font-black italic">02</span>
+                        <div>
+                          <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Therapeutic Synthesis</h2>
+                          <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Harmonic Frequency Injection</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+                        <div className="xl:col-span-3">
+                          <MusicPlayer emotion={fusionResult.finalEmotion} />
+                        </div>
+                        <div className="xl:col-span-2">
+                           <FeedbackSection />
+                        </div>
+                      </div>
+                    </motion.section>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+
+            {activeTab === "history" && (
+              <section className="space-y-10">
                 <div className="flex items-center gap-4">
-                    <span className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 font-black italic">03</span>
-                    <div>
-                      <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Analytics Hub</h2>
-                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Long-term emotional trajectory</p>
-                    </div>
+                  <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">H</span>
+                  <div>
+                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Emotion History</h2>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Past sessions and temporal logs</p>
+                  </div>
                 </div>
-                <AnalyticsOverview />
-            </section>
+                <SessionHistory />
+              </section>
+            )}
 
+            {activeTab === "insights" && (
+              <section className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">A</span>
+                  <div>
+                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Neural Insights</h2>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Algorithmic Patterns & Trends</p>
+                  </div>
+                </div>
+                <DetailedAnalytics />
+              </section>
+            )}
+
+            {activeTab === "therapy_analytics" && (
+              <section className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <span className="w-12 h-12 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center text-brand-mint font-black italic">T</span>
+                  <div>
+                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Therapy Efficacy</h2>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acoustic Impact & Bio-Response</p>
+                  </div>
+                </div>
+                <TherapyAnalytics />
+              </section>
+            )}
+
+            {activeTab === "profile" && (
+              <section className="space-y-10">
+                  <div className="flex items-center gap-4">
+                      <span className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 font-black italic">P</span>
+                      <div>
+                        <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">User Profile</h2>
+                        <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Holographic ID & Neural Sync Status</p>
+                      </div>
+                  </div>
+                  
+                  <div className="premium-card p-10 space-y-8 max-w-2xl">
+                     <div className="flex items-center gap-6">
+                        <div className="w-24 h-24 rounded-full bg-brand-cyan/20 border-2 border-brand-cyan/40 p-1">
+                           <div className="w-full h-full rounded-full bg-brand-teal flex items-center justify-center">
+                              <User className="w-10 h-10 text-brand-cyan" />
+                           </div>
+                        </div>
+                        <div className="space-y-1">
+                           <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">{user?.email?.split('@')[0] || 'User'}</h3>
+                           <p className="text-xs text-brand-cyan font-bold uppercase tracking-widest">{user?.email}</p>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                           <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-1">Session Count</span>
+                           <span className="text-xl font-bold text-white">12 Cycles</span>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                           <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-1">Sync Intensity</span>
+                           <span className="text-xl font-bold text-brand-mint">High Resonance</span>
+                        </div>
+                     </div>
+
+                     <div className="space-y-4">
+                        <button className="w-full p-4 rounded-xl bg-brand-cyan text-brand-teal font-black uppercase tracking-widest text-xs hover:shadow-[0_0_20px_rgba(0,242,255,0.4)] transition-all">
+                           Update Neural signature
+                        </button>
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full p-4 rounded-xl glass-morphism border border-red-500/20 text-red-500 font-black uppercase tracking-widest text-xs hover:bg-red-500/5 transition-all"
+                        >
+                           Terminate Session
+                        </button>
+                     </div>
+                  </div>
+              </section>
+            )}
           </div>
+          {/* Mobile Navigation Padding */}
+          <div className="h-32 lg:hidden" />
         </div>
+        
+        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
+
+      <PremiumUpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+      />
     </main>
   );
 }
