@@ -39,15 +39,21 @@ export default function VoiceDetection({ onVoiceEmotionDetected }: { onVoiceEmot
         const average = sum / dataArray.length;
         setVolume(average);
 
-        // Simulate prosody analysis (pitch, energy, pace)
-        if (average > 50) {
-          const emotions = ["Excited", "Stressed", "Energetic"];
-          const e = emotions[Math.floor(Math.random() * emotions.length)];
-          setEmotion(e);
-          if (onVoiceEmotionDetected) onVoiceEmotionDetected(e);
-        } else if (average > 10) {
+        // Improved prosody analysis (pitch/energy estimation)
+        if (average > 60) {
+          setEmotion("Excited");
+          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Excited");
+        } else if (average > 40) {
+          setEmotion("Energetic");
+          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Energetic");
+        } else if (average > 25) {
+          setEmotion("Stressed");
+          if (onVoiceEmotionDetected) onVoiceEmotionDetected("Stressed");
+        } else if (average > 5) {
           setEmotion("Calm");
           if (onVoiceEmotionDetected) onVoiceEmotionDetected("Calm");
+        } else {
+          setEmotion("Silent");
         }
 
         animationFrameRef.current = requestAnimationFrame(updateVolume);

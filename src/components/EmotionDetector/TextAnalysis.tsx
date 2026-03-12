@@ -20,31 +20,39 @@ export default function TextAnalysis({ onTextEmotionDetected }: { onTextEmotionD
     }
 
     setIsAnalyzing(true);
-    // Simulate HuggingFace @xenova/transformers analysis
-    setTimeout(() => {
-      const keywords: Record<string, string> = {
-        "happy": "Joy",
-        "sad": "Sadness",
-        "angry": "Anger",
-        "fear": "Fear",
-        "calm": "Calm",
-        "stressed": "Stress",
-        "excited": "Excitement"
-      };
-
-      let detected = "Neutral";
-      const words = text.toLowerCase().split(/\s+/);
-      for (const word of words) {
-        if (keywords[word]) {
-          detected = keywords[word];
-          break;
+    try {
+      const { pipeline } = await import("@xenova/transformers");
+      const classifier = await pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+      
+      const result = await classifier(text);
+      // SST-2 has POSITIVE/NEGATIVE. 
+      const label = (result as any)[0].label;
+      
+      let finalEmotion = label === "POSITIVE" ? "Joy" : "Stress";
+      
+      // Secondary check for more specific nuances
+      if (label === "NEGATIVE") {
+        if (text.toLowerCase().includes("sad") || text.toLowerCase().includes("alone")) {
+          finalEmotion = "Sadness";
+        } else if (text.toLowerCase().includes("angry") || text.toLowerCase().includes("mad")) {
+          finalEmotion = "Anger";
+        }
+      } else {
+        if (text.toLowerCase().includes("calm") || text.toLowerCase().includes("relax")) {
+          finalEmotion = "Calm";
         }
       }
 
-      setEmotion(detected);
-      if (onTextEmotionDetected) onTextEmotionDetected(detected);
+      setEmotion(finalEmotion);
+      if (onTextEmotionDetected) onTextEmotionDetected(finalEmotion);
+    } catch (err) {
+      console.error("NLP Error:", err);
+      // Fallback
+      const keywords: Record<string, string> = { "happy": "Joy", "sad": "Sadness" };
+      setEmotion(keywords[text.toLowerCase()] || "Neutral");
+    } finally {
       setIsAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (
