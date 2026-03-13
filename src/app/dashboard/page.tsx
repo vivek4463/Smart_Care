@@ -183,7 +183,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
-            className="fixed top-24 right-6 bottom-24 w-80 z-50 glass-morphism p-6 border-brand-cyan/20 bg-brand-cyan/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col"
+            className="fixed top-24 right-6 bottom-24 w-80 z-50 p-6 border-2 border-brand-cyan/30 bg-[#0a1616] shadow-[0_40px_100px_rgba(0,0,0,0.8)] flex flex-col rounded-[2.5rem]"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black text-white uppercase tracking-widest">Neural Alerts</h3>
