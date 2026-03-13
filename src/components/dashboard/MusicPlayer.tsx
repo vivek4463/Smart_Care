@@ -16,6 +16,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiAudioUrl, setAiAudioUrl] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [duration, setDuration] = useState(30); // Default for AI, 60 for local synth
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const params = MOOD_MAPPINGS[emotion] || MOOD_MAPPINGS["Neutral"];
@@ -141,6 +142,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
           ref={audioRef}
           src={aiAudioUrl} 
           loop 
+          onLoadedMetadata={() => audioRef.current && setDuration(audioRef.current.duration)}
           onEnded={() => setIsPlaying(false)}
           className="hidden"
         />
@@ -190,7 +192,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
                 {aiAudioUrl ? (
                   <>
                     <Sparkles className="w-2.5 h-2.5" />
-                    Neural Composition active
+                    Neural Composition • {formatTime(100, duration)}
                   </>
                 ) : (
                   <>
@@ -233,7 +235,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
             <div className="space-y-2">
               <div className="flex items-center gap-3 md:gap-4">
                 <span className="text-[8px] md:text-[10px] font-black text-white/20 tabular-nums">
-                  {formatTime(progress, aiAudioUrl ? 30 : 60)}
+                  {formatTime(progress, aiAudioUrl ? duration : 60)}
                 </span>
                 <div className="relative flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden cursor-pointer group/progress">
                   <motion.div 
@@ -244,7 +246,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
                   <div className="absolute inset-0 bg-white/10 scale-x-0 group-hover/progress:scale-x-100 origin-left transition-transform duration-300" />
                 </div>
                 <span className="text-[8px] md:text-[10px] font-black text-white/20 tabular-nums">
-                  {aiAudioUrl ? '00:30' : 'LIVE'}
+                  {aiAudioUrl ? formatTime(100, duration) : 'LIVE'}
                 </span>
               </div>
             </div>
