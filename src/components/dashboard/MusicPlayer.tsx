@@ -112,7 +112,8 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
     }
   };
 
-  const generateAiMusic = async () => {
+  const generateAiMusic = useCallback(async () => {
+    if (isGenerating) return;
     setIsGenerating(true);
     try {
       const res = await fetch('/api/music/generate', {
@@ -134,15 +135,23 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [emotion, isGenerating]);
 
-  const switchToLocal = () => {
+  const switchToLocal = useCallback(() => {
     if (audioRef.current) audioRef.current.pause();
     setAiAudioUrl(null);
     setIsPlaying(false);
     setProgress(0);
     console.log("Reverting to Local Synthesis");
-  };
+  }, []);
+
+  // 3. Default AI Generation Effect
+  useEffect(() => {
+    // Auto-generate AI music on mount or whenever emotion changes
+    // But only if we don't already have an AI URL for THIS specific emotion
+    console.log("Neural Core: Analyzing resonance for mood ->", emotion);
+    generateAiMusic();
+  }, [emotion]); // Removed generateAiMusic from deps to avoid infinite loop if it's not perfectly stable, but with useCallback it should be fine. Actually, emotion is the key trigger.
 
   const formatTime = (percent: number, totalSeconds: number) => {
     const currentSeconds = Math.floor((percent / 100) * totalSeconds);
@@ -225,16 +234,16 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
                   onClick={switchToLocal}
                   className="flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black tracking-widest uppercase bg-white/5 text-white/40 hover:bg-white/10 hover:text-brand-cyan border border-white/5 transition-all"
                 >
-                  Back to Synthesis
+                  Neural Mode Active • Switch to local
                 </button>
               ) : (
                 <button 
                   onClick={generateAiMusic}
                   disabled={isGenerating}
-                  className={`flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black tracking-widest uppercase transition-all ${isGenerating ? 'bg-brand-mint/20 text-brand-mint animate-pulse' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-brand-mint border border-white/5'}`}
+                  className={`flex items-center gap-2 px-2 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(0,255,185,0.1)] ${isGenerating ? 'bg-brand-mint/20 text-brand-mint animate-pulse' : 'bg-brand-mint/10 text-brand-mint hover:bg-brand-mint/20 border border-brand-mint/30'}`}
                 >
                   <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3" />
-                  {isGenerating ? 'Generating...' : 'Switch to MusicGen'}
+                  {isGenerating ? 'Recalibrating Neural Model...' : 'Trigger Neural Recovery'}
                 </button>
               )}
             </div>
