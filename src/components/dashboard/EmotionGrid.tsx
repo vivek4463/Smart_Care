@@ -17,7 +17,7 @@ export default function EmotionGrid({ onDetectionUpdate }: {
         className="space-y-2 h-fit"
       >
         <span className="text-[10px] font-black text-brand-cyan uppercase tracking-[0.4em] px-2">Visual Resonance</span>
-        <FaceDetection onEmotionDetected={(e) => onDetectionUpdate('face', e)} />
+        <FaceDetection onEmotionDetected={(e) => onDetectionUpdate('face', e.emotion)} />
       </motion.div>
 
       <motion.div 

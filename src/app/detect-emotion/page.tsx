@@ -13,7 +13,13 @@ const STEPS = ["introduction", "face", "voice", "text", "biometric", "summary"];
 
 export default function DetectEmotionPage() {
   const [step, setStep] = useState(0);
-  const [results, setResults] = useState({
+  const [results, setResults] = useState<{
+    face: string;
+    voice: string;
+    text: string;
+    heartRate: number;
+    finalEmotion: string;
+  }>({
     face: "",
     voice: "",
     text: "",
@@ -96,7 +102,7 @@ export default function DetectEmotionPage() {
                     <p className="text-[10px] text-brand-cyan font-black uppercase tracking-[0.4em]">Micro-expression calibration</p>
                 </div>
                 <div className="premium-card p-4 md:p-8">
-                    <FaceDetection onEmotionDetected={(e) => setResults(prev => ({ ...prev, face: e }))} />
+                    <FaceDetection onEmotionDetected={(e) => setResults(prev => ({ ...prev, face: e.emotion }))} />
                 </div>
               </div>
             )}
