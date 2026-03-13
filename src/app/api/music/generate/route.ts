@@ -6,11 +6,23 @@ const replicate = process.env.REPLICATE_API_TOKEN ? new Replicate({
 }) : null;
 
 export async function POST(req: Request) {
+  let currentMood = "Neutral";
   try {
-    const { mood, prompt } = await req.json();
+    const body = await req.json();
+    currentMood = body.mood || body.emotion || "Neutral";
+    const { prompt } = body;
 
-    if (!replicate) {
-      return NextResponse.json({ error: 'Replicate API token not configured' }, { status: 500 });
+    if (!replicate || process.env.REPLICATE_API_TOKEN === "your_token_here") {
+      const fallbackUrls: Record<string, string> = {
+        "Euphoria": "/music/happy.mp3",
+        "Melancholy": "/music/calm.mp3",
+        "Hostility": "/music/relax.mp3",
+        "Apprehension": "/music/meditation.mp3",
+      };
+      
+      const audioUrl = fallbackUrls[currentMood] || "/music/calm.mp3";
+      console.log("Replicate token invalid or missing, using fallback:", audioUrl);
+      return NextResponse.json({ audioUrl });
     }
 
     const defaultPrompts: Record<string, string> = {
@@ -22,7 +34,7 @@ export async function POST(req: Request) {
       "Equilibrium": "Minimalist, balanced ambient atmosphere with a natural pulse",
     };
 
-    const finalPrompt = prompt || defaultPrompts[mood] || "Soothing therapeutic ambient music";
+    const finalPrompt = prompt || defaultPrompts[currentMood] || "Soothing therapeutic ambient music";
 
     console.log("Generating music for prompt:", finalPrompt);
 
@@ -40,7 +52,18 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ audioUrl: output });
   } catch (error: any) {
-    console.error('MusicGen API Error:', error);
-    return NextResponse.json({ error: 'Failed to generate music' }, { status: 500 });
+    console.error('MusicGen API Critical Failure:', error);
+    
+    // Final layer of defense: Fallback to local files if AI generation fails
+    const fallbackUrls: Record<string, string> = {
+      "Euphoria": "/music/happy.mp3",
+      "Melancholy": "/music/calm.mp3",
+      "Hostility": "/music/relax.mp3",
+      "Apprehension": "/music/meditation.mp3",
+    };
+
+    const audioUrl = fallbackUrls[currentMood] || "/music/calm.mp3";
+    console.log("AI Generation failed, falling back to local:", audioUrl);
+    return NextResponse.json({ audioUrl, warning: "AI generation failed, used local fallback" });
   }
 }

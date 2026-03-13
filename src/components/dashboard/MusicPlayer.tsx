@@ -99,17 +99,19 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
       const res = await fetch('/api/music/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mood: emotion }),
+        body: JSON.stringify({ emotion }),
       });
       const data = await res.json();
       
+      console.log("Music API Response:", data);
+
       if (data.audioUrl) {
         setAiAudioUrl(data.audioUrl);
       } else {
         throw new Error(data.error || "Empty audio payload");
       }
     } catch (error) {
-      console.error('MusicGen Failure:', error);
+      console.error('Music generation failed:', error);
     } finally {
       setIsGenerating(false);
     }
