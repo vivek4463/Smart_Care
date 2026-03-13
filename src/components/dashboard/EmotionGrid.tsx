@@ -10,7 +10,7 @@ export default function EmotionGrid({ onDetectionUpdate }: {
   onDetectionUpdate: (type: string, value: any) => void 
 }) {
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full h-full overflow-y-auto custom-scrollbar pr-2">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 w-full h-full overflow-y-auto custom-scrollbar pr-2">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

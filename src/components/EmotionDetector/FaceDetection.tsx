@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import * as faceapi from "face-api.js";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, AlertCircle, RefreshCw } from "lucide-react";
+import { Camera, AlertCircle, RefreshCw, Activity } from "lucide-react";
 
-export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected?: (emotion: string) => void }) {
+export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected?: (data: { emotion: string; confidence: number }) => void }) {
   const webcamRef = useRef<Webcam>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [emotion, setEmotion] = useState<string>("Detecting...");
@@ -25,7 +25,7 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
         setIsLoaded(true);
       } catch (err) {
         console.error("Face-api models load failed:", err);
-        setError("Failed to load neural models");
+        setError("Neural Models Unavailable. Ensure /public/models contains required face-api data.");
       }
     };
     loadModels();
@@ -37,7 +37,7 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
     const interval = setInterval(async () => {
       if (webcamRef.current && webcamRef.current.video?.readyState === 4) {
         const video = webcamRef.current.video;
-        
+
         const detection = await faceapi
           .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
           .withFaceExpressions();
@@ -46,39 +46,47 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
           // Find the expression with highest probability
           const expressions = detection.expressions;
           const bestMatch = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
-          
+
           const rawEmotion = bestMatch[0];
           const score = bestMatch[1];
 
-          // Map face-api emotions to our app's set
+          // Map face-api emotions to more descriptive labels for our engine
           const emotionMap: Record<string, string> = {
             neutral: "Neutral",
             happy: "Happy",
             sad: "Sad",
-            angry: "Stress",
-            fearful: "Stress",
-            disgusted: "Stress",
-            surprised: "Happy"
+            angry: "Angry",
+            fearful: "Fearful",
+            disgusted: "Disgusted",
+            surprised: "Surprised"
           };
 
           const mappedEmotion = emotionMap[rawEmotion] || "Neutral";
-          
+
           setEmotion(mappedEmotion);
           setConfidence(Math.round(score * 100));
-          if (onEmotionDetected) onEmotionDetected(mappedEmotion);
+
+          // Pass detection details to the parent
+          if (onEmotionDetected && score > 0.5) {
+            onEmotionDetected({ emotion: mappedEmotion, confidence: score });
+          }
         }
       }
-    }, 1000);
+    }, 500); // Increased frequency for smoother feedback
 
     return () => clearInterval(interval);
   }, [isLoaded, onEmotionDetected]);
 
   return (
-    <div className="flex flex-col items-center gap-6 p-6 glass-morphism border border-white/10 w-full max-w-2xl">
-      <div className="relative w-full h-[250px] md:h-[400px] bg-black rounded-2xl overflow-hidden border border-white/10 group">
-        {!isLoaded ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-brand-teal/50 backdrop-blur-md">
-            <RefreshCw className="w-8 h-8 text-brand-cyan animate-spin" />
+    <div 
+      suppressHydrationWarning
+      className="flex flex-col items-center gap-4 md:gap-6 p-4 md:p-6 glass-morphism border border-white/10 w-full max-w-2xl"
+    >
+      <div className="relative w-full h-[180px] md:h-[400px] bg-black rounded-2xl overflow-hidden border border-white/10 group">
+        {!isLoaded && !error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-teal/50 backdrop-blur-md z-40">
+            <RefreshCw className="w-8 h-8 text-brand-cyan animate-spin mb-4" />
+            <span className="text-xs font-bold text-brand-cyan tracking-widest uppercase">Initializing Bio-Scanner...</span>
           </div>
         ) : (
           <>
@@ -91,9 +99,9 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
                 height: 480,
                 facingMode: "user"
               }}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover grayscale opacity-60 transition-all group-hover:grayscale-0 group-hover:opacity-100"
             />
-            
+
             <div className="absolute top-3 left-3 z-20">
               <div className="px-3 py-1 rounded-full glass-morphism text-[10px] font-bold text-brand-cyan flex items-center gap-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
@@ -105,45 +113,67 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
               <AnimatePresence mode="wait">
                 <motion.div
                   key={emotion}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="px-4 py-2 rounded-xl bg-brand-cyan text-brand-teal font-extrabold text-sm shadow-lg shadow-brand-cyan/20"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.2 }}
+                  className="px-6 py-3 rounded-2xl bg-brand-cyan text-brand-teal font-black text-xs shadow-[0_0_30px_rgba(0,242,255,0.4)] uppercase tracking-widest flex items-center gap-2"
                 >
-                  {emotion.toUpperCase()}
+                  <Activity className="w-4 h-4" />
+                  {emotion}
                 </motion.div>
               </AnimatePresence>
             </div>
+
+            {/* Simulated UI Overlays */}
+            <div className="absolute inset-0 pointer-events-none border-[1px] border-white/5 rounded-2xl">
+              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-brand-cyan/10" style={{ animation: 'scan 4s linear infinite' }} />
+            </div>
           </>
         )}
-        
+
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 backdrop-blur-sm z-30">
-            <div className="flex items-center gap-2 text-white font-bold bg-red-600 px-4 py-2 rounded-xl">
-              <AlertCircle className="w-5 h-5" />
-              {error}
+          <div className="absolute inset-0 flex items-center justify-center bg-red-900/40 backdrop-blur-md z-50 p-8 text-center">
+            <div className="flex flex-col items-center gap-4 text-white">
+              <AlertCircle className="w-12 h-12 text-red-500" />
+              <p className="font-bold text-sm tracking-tight">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-6 py-2 bg-red-600 rounded-xl text-xs font-black uppercase hover:bg-red-500 transition-all"
+              >
+                Retry System Initial
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      <div className="w-full space-y-4">
-        <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Signal Confidence</span>
-          <div className="text-xl md:text-2xl font-black text-brand-cyan">{confidence}%</div>
+      <div className="w-full grid grid-cols-2 gap-4">
+        <div className="p-4 rounded-xl bg-white/5 border border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-brand-cyan/20" />
+          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1 tracking-tighter">Certainty index</span>
+          <div className="text-2xl font-black text-brand-cyan">{confidence}%</div>
         </div>
-        <div className="p-4 rounded-xl bg-white/5 border border-white/5">
-          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1">Detected Resonance</span>
-          <div className="text-xl md:text-2xl font-black text-brand-mint italic uppercase">{emotion || "Scanning..."}</div>
+        <div className="p-4 rounded-xl bg-white/5 border border-white/5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-brand-mint/20" />
+          <span className="text-[10px] font-bold text-white/20 uppercase block mb-1 tracking-tighter">Dominant Mood</span>
+          <div className="text-2xl font-black text-brand-mint italic uppercase truncate">{emotion === "Detecting..." ? "Scanning" : emotion}</div>
         </div>
       </div>
 
       <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/5">
         <Camera className="w-5 h-5 text-brand-cyan mt-1" />
-        <p className="text-sm text-white/50 leading-relaxed">
-          Real-time biometric extraction via tiny-face neural net. Expression mapping synchronized with therapeutic frequency engine.
+        <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase tracking-wider">
+          Biometric extraction synchronized with TinyFace v2.1. Spatial mapping active. Emotion labels derived from localized neural weightings.
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes scan {
+          0% { top: 0% }
+          50% { top: 100% }
+          100% { top: 0% }
+        }
+      `}</style>
     </div>
   );
 }

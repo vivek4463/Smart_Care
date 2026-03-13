@@ -1,7 +1,12 @@
+export interface EmotionSignal {
+  emotion: string;
+  confidence: number;
+}
+
 export interface EmotionData {
-  face: string;
-  voice: string;
-  text: string;
+  face: string | EmotionSignal;
+  voice: string | EmotionSignal;
+  text: string | EmotionSignal;
   heartRate: number | string;
 }
 
@@ -16,67 +21,105 @@ export interface FusionResult {
   };
 }
 
-/**
- * Emotion Fusion Engine
- * Combines multimodal signals to derive a unified emotional state.
- * Logic aligned with the SmartCare Blueprint.
- */
+const WEIGHTS = {
+  face: 0.45,
+  text: 0.35,
+  voice: 0.20
+};
+
+const CORE_EMOTION_MAP: Record<string, string> = {
+  // Face
+  "Happy": "Joy",
+  "Sad": "Sadness",
+  "Angry": "Anger",
+  "Fearful": "Fear",
+  "Disgusted": "Aversion",
+  "Surprised": "Awe",
+  "Neutral": "Neutral",
+  
+  // Text & Detailed Labels
+  "Euphoria": "Joy",
+  "Melancholy": "Sadness",
+  "Hostility": "Anger",
+  "Apprehension": "Fear",
+  "Astonishment": "Awe",
+  "Equilibrium": "Neutral",
+  "Joy": "Joy",
+  "Sadness": "Sadness",
+  "Anger": "Anger",
+  "Fear": "Fear",
+  "Surprise": "Awe",
+  "Love": "Joy",
+
+  // Voice
+  "Energetic": "Joy",
+  "Passionate": "Joy",
+  "Unsettled": "Anxiety",
+  "Whispering": "Neutral",
+  "Calm": "Neutral",
+  "Silence": "Neutral"
+};
+
 export function getFinalEmotion(data: EmotionData): FusionResult {
   const hr = typeof data.heartRate === 'number' ? data.heartRate : 0;
   
-  // 1. Critical Overrides (e.g. Stress detected by Heart Rate)
-  if (hr > 100) {
+  // 1. Critical Biometric Alerts
+  if (hr > 110) {
     return {
-      finalEmotion: "Stress",
-      confidence: 92,
+      finalEmotion: "Panic/Distress",
+      confidence: 95,
       explanation: {
-        face: data.face || "Neutral",
-        voice: data.voice || "Neutral",
-        text: data.text || "Neutral",
-        heartRate: "Elevated (>100 BPM)"
+        face: getEmotionLabel(data.face),
+        voice: getEmotionLabel(data.voice),
+        text: getEmotionLabel(data.text),
+        heartRate: "Critical (Elevated Heart Rate Detected)"
       }
     };
   }
 
-  // 2. Blueprint Specific Logic: Sadness detection
-  if (data.face.toLowerCase() === "sad" || data.text.toLowerCase() === "sad") {
-    return {
-      finalEmotion: "Sad",
-      confidence: 88,
-      explanation: {
-        face: data.face || "Neutral",
-        voice: data.voice || "Neutral",
-        text: data.text || "Neutral",
-        heartRate: hr > 0 ? `${hr} BPM` : "Normal"
-      }
-    };
-  }
+  // 2. Weighted Scoring Logic
+  const scores: Record<string, number> = {};
 
-  // 3. Multimodal Convergence (e.g. Happy/Joy)
-  if (data.face.toLowerCase() === "happy" || data.voice.toLowerCase() === "excited") {
-    return {
-      finalEmotion: "Happy",
-      confidence: 85,
-      explanation: {
-        face: data.face || "Neutral",
-        voice: data.voice || "Neutral",
-        text: data.text || "Neutral",
-        heartRate: hr > 0 ? `${hr} BPM` : "Normal"
-      }
-    };
-  }
+  const addScore = (modality: keyof typeof WEIGHTS, signal: string | EmotionSignal) => {
+    const rawLabel = typeof signal === 'string' ? signal : signal.emotion;
+    const signalConf = typeof signal === 'string' ? 1 : signal.confidence;
+    
+    const unifiedEmotion = CORE_EMOTION_MAP[rawLabel] || "Neutral";
+    const weight = WEIGHTS[modality] * signalConf;
+    
+    scores[unifiedEmotion] = (scores[unifiedEmotion] || 0) + weight;
+  };
 
-  // 4. Fallback Logic
-  const primaryEmotion = data.face || data.text || data.voice || "Neutral";
-  
+  if (data.face) addScore("face", data.face);
+  if (data.text) addScore("text", data.text);
+  if (data.voice) addScore("voice", data.voice);
+
+  let finalEmotion = "Neutral";
+  let maxScore = 0;
+
+  Object.entries(scores).forEach(([emotion, score]) => {
+    if (score > maxScore) {
+      maxScore = score;
+      finalEmotion = emotion;
+    }
+  });
+
+  let confidence = Math.round(maxScore * 100);
+  if (maxScore < 0.2) confidence = 50; 
+
   return {
-    finalEmotion: primaryEmotion,
-    confidence: 75,
+    finalEmotion,
+    confidence: Math.min(confidence, 98),
     explanation: {
-      face: data.face || "Not detected",
-      voice: data.voice || "Not detected",
-      text: data.text || "Not recorded",
-      heartRate: hr > 0 ? `${hr} BPM` : "Stationary"
+      face: getEmotionLabel(data.face),
+      voice: getEmotionLabel(data.voice),
+      text: getEmotionLabel(data.text),
+      heartRate: hr > 0 ? `${hr} BPM` : "Stationary/Normal"
     }
   };
+}
+
+function getEmotionLabel(signal: string | EmotionSignal | undefined): string {
+  if (!signal) return "No Signal";
+  return typeof signal === 'string' ? signal : signal.emotion;
 }

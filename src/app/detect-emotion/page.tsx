@@ -151,17 +151,17 @@ export default function DetectEmotionPage() {
                     <p className="text-xl text-white/40 font-light italic">Your biological resonance has been successfully mapped to our neural core.</p>
                 </div>
                 <div className="premium-card p-10 w-full grid grid-cols-2 md:grid-cols-4 gap-8">
-                   <div className="space-y-2">
+                    <div className="space-y-2">
                       <span className="text-[10px] text-white/20 font-black uppercase tracking-widest block">Face</span>
-                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.face || "SYNCED"}</span>
+                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.face || "NO SIGNAL"}</span>
                     </div>
                     <div className="space-y-2">
                       <span className="text-[10px] text-white/20 font-black uppercase tracking-widest block">Voice</span>
-                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.voice || "SYNCED"}</span>
+                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.voice || "NO SIGNAL"}</span>
                     </div>
                     <div className="space-y-2">
                       <span className="text-[10px] text-white/20 font-black uppercase tracking-widest block">Lexical</span>
-                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.text || "SYNCED"}</span>
+                      <span className="text-2xl font-black text-brand-cyan drop-shadow-[0_0_10px_rgba(0,242,255,0.4)]">{results.text || "NO SIGNAL"}</span>
                     </div>
                     <div className="space-y-2">
                       <span className="text-[10px] text-white/20 font-black uppercase tracking-widest block">Biometric</span>

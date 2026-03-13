@@ -39,9 +39,9 @@ export default function DashboardPage() {
 
   // Multi-modal state
   const [detectionData, setDetectionData] = useState({
-    face: "",
-    voice: "",
-    text: "",
+    face: "" as any,
+    voice: "" as any,
+    text: "" as any,
     heartRate: "N/A" as number | string
   });
 
@@ -84,29 +84,36 @@ export default function DashboardPage() {
     setTimeout(async () => {
       const result = getFinalEmotion(detectionData);
       
+      const emotions = ["Joy", "Sadness", "Anger", "Fear", "Anxiety", "Neutral", "Awe"];
+      const probabilities: Record<string, number> = {};
+      
+      emotions.forEach(e => {
+        if (e === result.finalEmotion) {
+          probabilities[e] = result.confidence;
+        } else {
+          probabilities[e] = Math.floor((100 - result.confidence) / (emotions.length - 1));
+        }
+      });
+
       const finalResult = {
         finalEmotion: result.finalEmotion,
         confidence: result.confidence,
-        probabilities: {
-          "Joy": result.finalEmotion === "Happy" ? 85 : 10,
-          "Sadness": result.finalEmotion === "Sad" ? 82 : 12,
-          "Anger": 8,
-          "Stress": result.finalEmotion === "Stress" ? 75 : 15,
-          "Calm": result.finalEmotion === "Calm" ? 90 : 20,
-          "Fear": 5,
-          "Neutral": 10
-        }
+        probabilities
       };
 
       setFusionResult(finalResult);
 
-      // Save to Supabase for "Real-world Product" persistence
       if (user?.id) {
+        // Extract raw labels for Supabase for better searchability
+        const faceLabel = typeof detectionData.face === 'string' ? detectionData.face : detectionData.face?.emotion || "";
+        const voiceLabel = typeof detectionData.voice === 'string' ? detectionData.voice : detectionData.voice?.emotion || "";
+        const textLabel = typeof detectionData.text === 'string' ? detectionData.text : detectionData.text || "";
+
         await sessionService.saveSession({
           user_id: user.id,
-          face_emotion: detectionData.face,
-          voice_emotion: detectionData.voice,
-          text_sentiment: detectionData.text,
+          face_emotion: faceLabel,
+          voice_emotion: voiceLabel,
+          text_sentiment: textLabel,
           heart_rate: Number(detectionData.heartRate) || 0,
           final_emotion: result.finalEmotion,
           confidence: result.confidence
@@ -127,12 +134,11 @@ export default function DashboardPage() {
 
   const handleMoodBoost = () => {
     setFusionResult({
-      finalEmotion: "Excited",
+      finalEmotion: "Joy",
       confidence: 100,
       probabilities: {
-        "Joy": 95,
-        "Excited": 95,
-        "Neutral": 5
+        "Joy": 100,
+        "Neutral": 0
       }
     });
     setShowResults(true);
@@ -197,8 +203,8 @@ export default function DashboardPage() {
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10">
-          <div className="max-w-7xl mx-auto space-y-12">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-10">
+          <div className="max-w-7xl mx-auto space-y-8 md:space-y-12">
             
             {activeTab === "dashboard" && (
               <>
@@ -208,10 +214,10 @@ export default function DashboardPage() {
                 {/* Welcome & Quick Actions */}
                 <div className="space-y-4">
                   <div className="flex flex-col">
-                    <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
+                    <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-tight md:leading-none">
                       Welcome Back, <span className="text-brand-cyan">{user?.email?.split('@')[0] || 'User'}</span>
                     </h1>
-                    <p className="text-sm text-white/30 font-bold uppercase tracking-[0.2em] mt-2">Ready to align your neural frequency?</p>
+                    <p className="text-[10px] md:text-sm text-white/30 font-bold uppercase tracking-[0.2em] mt-2">Ready to align your neural frequency?</p>
                   </div>
                 </div>
 
@@ -253,11 +259,11 @@ export default function DashboardPage() {
                       id="step-01-acquisition" 
                       className="space-y-6 pt-10 border-t border-white/5"
                     >
-                      <div className="flex items-center gap-4">
-                        <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">01</span>
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <span className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic text-sm md:text-base">01</span>
                         <div>
-                           <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Emotional Inputs</h2>
-                           <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acquisition of biological signals</p>
+                           <h2 className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Emotional Inputs</h2>
+                           <p className="text-[8px] md:text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acquisition of biological signals</p>
                         </div>
                       </div>
                       <EmotionGrid onDetectionUpdate={updateDetection} />
