@@ -60,17 +60,17 @@ export default function TextAnalysis({
       setEngine(result.engine || "NEURAL NLP");
 
       const emotionMap: Record<string, string> = {
-        POSITIVE: "Euphoria",
-        NEGATIVE: "Melancholy",
-        sadness: "Melancholy",
-        joy: "Euphoria",
-        love: "Affection",
-        anger: "Hostility",
-        fear: "Apprehension",
-        surprise: "Astonishment"
+        POSITIVE: "Happy",
+        NEGATIVE: "Sad",
+        sadness: "Sad",
+        joy: "Happy",
+        love: "Love",
+        anger: "Angry",
+        fear: "Anxious",
+        surprise: "Surprised"
       };
 
-      const finalEmotion = emotionMap[label] || "Equilibrium";
+      const finalEmotion = emotionMap[label] || "Neutral";
 
       setEmotion(finalEmotion);
 
@@ -97,10 +97,9 @@ export default function TextAnalysis({
             "love",
             "good",
             "best",
-            "amazing",
-            "euphoria"
+            "amazing"
           ],
-          emotion: "Euphoria"
+          emotion: "Happy"
         },
 
         {
@@ -111,10 +110,9 @@ export default function TextAnalysis({
             "alone",
             "cry",
             "depressed",
-            "miserable",
-            "melancholy"
+            "miserable"
           ],
-          emotion: "Melancholy"
+          emotion: "Sad"
         },
 
         {
@@ -124,10 +122,9 @@ export default function TextAnalysis({
             "annoyed",
             "frustrated",
             "hate",
-            "furious",
-            "hostility"
+            "furious"
           ],
-          emotion: "Hostility"
+          emotion: "Angry"
         },
 
         {
@@ -137,20 +134,18 @@ export default function TextAnalysis({
             "anxious",
             "worried",
             "nervous",
-            "panic",
-            "apprehension"
+            "panic"
           ],
-          emotion: "Apprehension"
+          emotion: "Anxious"
         },
 
         {
           words: [
             "surprise",
             "wow",
-            "unbelievable",
-            "astonishment"
+            "unbelievable"
           ],
-          emotion: "Astonishment"
+          emotion: "Surprised"
         }
       ];
 
@@ -163,7 +158,7 @@ export default function TextAnalysis({
 
       }
 
-      setEmotion(`${fallbackEmotion} (Lexical)`);
+      setEmotion(fallbackEmotion);
       setConfidence(null);
       setEngine("LEXICAL_ENGINE_v1");
 

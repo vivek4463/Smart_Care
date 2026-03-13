@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, SkipForward, Volume2, Music, Sparkles, Heart, Activity } from "lucide-react";
 import { musicGenerator, MOOD_MAPPINGS } from "@/lib/musicGeneration";
@@ -21,6 +21,27 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const params = MOOD_MAPPINGS[emotion] || MOOD_MAPPINGS["Neutral"];
 
+  const togglePlayback = useCallback(async () => {
+    const newState = !isPlaying;
+    
+    if (newState) {
+      if (aiAudioUrl && audioRef.current) {
+        audioRef.current.volume = volume;
+        await audioRef.current.play();
+      } else {
+        musicGenerator.setVolume(volume);
+        await musicGenerator.start(emotion);
+      }
+    } else {
+      if (aiAudioUrl && audioRef.current) {
+        audioRef.current.pause();
+      } else {
+        musicGenerator.stop();
+      }
+    }
+    setIsPlaying(newState);
+  }, [isPlaying, aiAudioUrl, volume, emotion]);
+
   // 1. Progress Tracking Engine
   useEffect(() => {
     let interval: any;
@@ -39,6 +60,24 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
     }
     return () => clearInterval(interval);
   }, [isPlaying, aiAudioUrl]);
+
+  // AI Command Listener
+  useEffect(() => {
+    const handleAiCommand = (e: any) => {
+      console.log("System Event Received:", e.detail?.command);
+      if (e.detail?.command === 'PLAY_MUSIC') {
+        if (!isPlaying) {
+          console.log("AI Command: Initiating Harmonic Injection...");
+          togglePlayback();
+        } else {
+          console.log("AI Command: Already Resonating. Maintaining playback.");
+        }
+      }
+    };
+
+    window.addEventListener('smartcare-ai-command', handleAiCommand);
+    return () => window.removeEventListener('smartcare-ai-command', handleAiCommand);
+  }, [isPlaying, emotion, aiAudioUrl, togglePlayback]);
 
   // 2. Robust Autoplay Effect
   useEffect(() => {
@@ -61,28 +100,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
       
       playAudio();
     }
-  }, [aiAudioUrl]);
-
-  const togglePlayback = async () => {
-    const newState = !isPlaying;
-    
-    if (newState) {
-      if (aiAudioUrl && audioRef.current) {
-        audioRef.current.volume = volume;
-        await audioRef.current.play();
-      } else {
-        musicGenerator.setVolume(volume);
-        await musicGenerator.start(emotion);
-      }
-    } else {
-      if (aiAudioUrl && audioRef.current) {
-        audioRef.current.pause();
-      } else {
-        musicGenerator.stop();
-      }
-    }
-    setIsPlaying(newState);
-  };
+  }, [aiAudioUrl, volume]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);

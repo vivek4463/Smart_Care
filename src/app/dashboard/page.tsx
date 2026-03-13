@@ -176,6 +176,42 @@ export default function DashboardPage() {
         onUpgradeClick={() => setShowUpgradeModal(true)}
       />
 
+      {/* Global Notifications Overlay */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div 
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            className="fixed top-24 right-6 bottom-24 w-80 z-50 glass-morphism p-6 border-brand-cyan/20 bg-brand-cyan/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-black text-white uppercase tracking-widest">Neural Alerts</h3>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                className="text-white/20 hover:text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+               <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan mt-1.5" />
+                  <p className="text-[10px] text-white/60 font-medium leading-relaxed">Session recorded successfully. Your history has been updated.</p>
+               </div>
+               <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-mint mt-1.5" />
+                  <p className="text-[10px] text-white/60 font-medium leading-relaxed">Weekly resonance report is now available in Analytics.</p>
+               </div>
+               <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5" />
+                  <p className="text-[10px] text-white/60 font-medium leading-relaxed">New therapeutic frequencies available for download.</p>
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Decorative Orbs */}
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/5 rounded-full blur-[120px] pointer-events-none" />
@@ -227,28 +263,6 @@ export default function DashboardPage() {
                   setActiveTab={setActiveTab} 
                 />
 
-                <AnimatePresence>
-                  {showNotifications && (
-                    <motion.div 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="premium-card p-6 border-brand-cyan/20 bg-brand-cyan/5"
-                    >
-                      <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4">Neural Alerts</h3>
-                      <div className="space-y-3">
-                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan" />
-                            <p className="text-[10px] text-white/60 font-medium">Session recorded successfully. Your history has been updated.</p>
-                         </div>
-                         <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand-mint" />
-                            <p className="text-[10px] text-white/60 font-medium">Weekly resonance report is now available in Analytics.</p>
-                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 {/* Step 01: Multi-modal Input - Hidden until session start */}
                 <AnimatePresence>
@@ -428,7 +442,11 @@ export default function DashboardPage() {
           <div className="h-32 lg:hidden" />
         </div>
         
-        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MobileNav 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          onToggleNotifications={() => setShowNotifications(!showNotifications)}
+        />
       </div>
 
       <PremiumUpgradeModal 

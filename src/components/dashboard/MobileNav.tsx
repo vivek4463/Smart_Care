@@ -1,18 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LayoutDashboard, History, BarChart2, User, Sparkles } from "lucide-react";
+import { LayoutDashboard, History, BarChart2, User, Sparkles, Bell } from "lucide-react";
 
-export default function MobileNav({ activeTab, setActiveTab }: {
+export default function MobileNav({ activeTab, setActiveTab, onToggleNotifications }: {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  onToggleNotifications: () => void;
 }) {
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
     { id: 'history', icon: History, label: 'History' },
+    { id: 'notifications', icon: Bell, label: 'Alerts', isToggle: true },
     { id: 'insights', icon: BarChart2, label: 'Insights' },
     { id: 'therapy_analytics', icon: Sparkles, label: 'Therapy' },
-    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (
@@ -21,7 +22,7 @@ export default function MobileNav({ activeTab, setActiveTab }: {
         {menuItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => item.isToggle ? onToggleNotifications() : setActiveTab(item.id)}
             className="relative flex flex-col items-center gap-1 p-3 transition-all"
           >
             {activeTab === item.id && (

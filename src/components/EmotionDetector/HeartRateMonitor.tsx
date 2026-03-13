@@ -33,25 +33,53 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
 
   const connectWatch = async () => {
     setIsSearching(true);
-    // Simulate Web Bluetooth API interaction
-    setTimeout(() => {
-      const initialBpm = 72;
-      setBpm(initialBpm);
-      processBpmRules(initialBpm);
+    try {
+      // @ts-ignore - Web Bluetooth API
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: ['heart_rate'] }]
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('heart_rate');
+      const characteristic = await service.getCharacteristic('heart_rate_measurement');
+
+      await characteristic.startNotifications();
       setIsConnected(true);
       setIsSearching(false);
-      if (onHeartRateDetected) onHeartRateDetected(initialBpm);
-      
-      // Simulate real-time updates
-      const interval = setInterval(() => {
-        const newBpm = 70 + Math.floor(Math.random() * 15);
-        setBpm(newBpm);
-        processBpmRules(newBpm);
-        if (onHeartRateDetected) onHeartRateDetected(newBpm);
-      }, 5000);
-      
-      return () => clearInterval(interval);
-    }, 2000);
+
+      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
+        const value = event.target.value;
+        // Heart Rate Measurement format (first byte is flags, second is BPM)
+        const heartRate = value.getUint8(1);
+        setBpm(heartRate);
+        processBpmRules(heartRate);
+        if (onHeartRateDetected) onHeartRateDetected(heartRate);
+      });
+
+      device.addEventListener('gattserverdisconnected', () => {
+        setIsConnected(false);
+        setBpm(null);
+      });
+
+    } catch (error) {
+      console.error('Bluetooth Sync Error:', error);
+      setIsSearching(false);
+      // Fallback for demo purposes if Bluetooth fails or is canceled
+      if (confirm("Bluetooth pairing failed or canceled. Enter demo mode with simulated signals?")) {
+        simulateHeartRate();
+      }
+    }
+  };
+
+  const simulateHeartRate = () => {
+    setIsConnected(true);
+    const interval = setInterval(() => {
+      const newBpm = 70 + Math.floor(Math.random() * 15);
+      setBpm(newBpm);
+      processBpmRules(newBpm);
+      if (onHeartRateDetected) onHeartRateDetected(newBpm);
+    }, 5000);
+    return () => clearInterval(interval);
   };
 
   return (

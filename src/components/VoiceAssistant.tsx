@@ -35,11 +35,16 @@ export default function VoiceAssistant({ currentMood }: { currentMood: string })
   }, []);
 
   const startListening = () => {
-    if (recognitionRef.current) {
-      setTranscript("");
-      setResponse("");
-      setIsListening(true);
-      recognitionRef.current.start();
+    if (recognitionRef.current && !isListening) {
+      try {
+        setTranscript("");
+        setResponse("");
+        setIsListening(true);
+        recognitionRef.current.start();
+      } catch (err) {
+        console.error("Speech Recognition Start Error:", err);
+        setIsListening(false);
+      }
     }
   };
 
@@ -67,7 +72,23 @@ export default function VoiceAssistant({ currentMood }: { currentMood: string })
       });
       
       const data = await res.json();
-      const aiResponse = data.response || "I am processing your signal. Connection stability is nominal.";
+      let aiResponse = data.response || "I am processing your signal. Connection stability is nominal.";
+      
+      // AI Command Detection - Robust approach
+      const hasMusicCommand = /\[CMD:PLAY_MUSIC\]/i.test(aiResponse);
+      if (hasMusicCommand) {
+        console.log("Neural Command Protocol: Triggering Music Therapy...");
+        
+        // Dispatch event with a small delay to ensure listeners are ready
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('smartcare-ai-command', { 
+            detail: { command: 'PLAY_MUSIC' } 
+          }));
+        }, 150);
+
+        // Strip ALL occurrences (case-insensitive) and clean up extra spaces
+        aiResponse = aiResponse.replace(/\[CMD:PLAY_MUSIC\]/gi, "").replace(/\s+/g, " ").trim();
+      }
       
       setResponse(aiResponse);
       speak(aiResponse);
@@ -110,6 +131,7 @@ export default function VoiceAssistant({ currentMood }: { currentMood: string })
             <AnimatePresence mode="popLayout" initial={false}>
             {transcript && (
                 <motion.div 
+                key="user-transcript"
                 initial={{ opacity: 0, x: 20, scale: 0.9 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 className="flex justify-end"
@@ -123,6 +145,7 @@ export default function VoiceAssistant({ currentMood }: { currentMood: string })
 
             {response && (
                 <motion.div 
+                key="ai-response"
                 initial={{ opacity: 0, x: -20, scale: 0.9 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 100, damping: 15 }}

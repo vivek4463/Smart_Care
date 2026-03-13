@@ -28,7 +28,7 @@ const WEIGHTS = {
 };
 
 const CORE_EMOTION_MAP: Record<string, string> = {
-  // Face
+  // Face & Core Labels
   "Happy": "Joy",
   "Sad": "Sadness",
   "Angry": "Anger",
@@ -41,14 +41,11 @@ const CORE_EMOTION_MAP: Record<string, string> = {
   "Euphoria": "Joy",
   "Melancholy": "Sadness",
   "Hostility": "Anger",
-  "Apprehension": "Fear",
+  "Apprehension": "Anxiety",
   "Astonishment": "Awe",
   "Equilibrium": "Neutral",
-  "Joy": "Joy",
-  "Sadness": "Sadness",
-  "Anger": "Anger",
-  "Fear": "Fear",
-  "Surprise": "Awe",
+  "Anxious": "Anxiety",
+  "Awe": "Awe",
   "Love": "Joy",
 
   // Voice

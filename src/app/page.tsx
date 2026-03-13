@@ -6,10 +6,10 @@ import Link from "next/link";
 
 export default function LandingPage() {
   return (
-    <main className="relative min-h-screen bg-gradient-main flex flex-col items-center justify-center p-6 overflow-hidden">
+    <main suppressHydrationWarning className="relative min-h-screen bg-gradient-main flex flex-col items-center justify-center p-6 overflow-hidden">
       {/* Decorative Orbs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-brand-cyan/5 rounded-full blur-[160px]" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand-mint/5 rounded-full blur-[160px]" />
+      <div suppressHydrationWarning className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-brand-cyan/5 rounded-full blur-[160px]" />
+      <div suppressHydrationWarning className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-brand-mint/5 rounded-full blur-[160px]" />
 
       {/* Hero Section */}
       <section className="relative z-10 w-full max-w-7xl px-6 pt-32 pb-24 mx-auto">
