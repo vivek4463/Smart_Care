@@ -55,7 +55,10 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
   };
 
   return (
-    <div className="p-6 glass-morphism border border-white/10 w-full max-w-2xl flex flex-col gap-6">
+    <div 
+      suppressHydrationWarning
+      className="p-6 glass-morphism border border-white/10 w-full max-w-2xl flex flex-col gap-6"
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
           <Watch className="w-5 h-5 text-brand-cyan" />
