@@ -8,21 +8,25 @@ import { authService } from "@/lib/authService";
 
 // Components
 import Sidebar from "@/components/dashboard/Sidebar";
-import EmotionGrid from "@/components/dashboard/EmotionGrid";
-import AnalysisControl from "@/components/dashboard/AnalysisControl";
-import ResultsPanel from "@/components/dashboard/ResultsPanel";
-import FusionExplanation from "@/components/dashboard/FusionExplanation";
-import MusicPlayer from "@/components/dashboard/MusicPlayer";
-import FeedbackSection from "@/components/dashboard/FeedbackSection";
-import AnalyticsOverview from "@/components/dashboard/AnalyticsOverview";
-import SystemStatusPanel from "@/components/dashboard/SystemStatusPanel";
-import VoiceAssistant from "@/components/VoiceAssistant";
-import QuickActions from "@/components/dashboard/QuickActions";
-import MobileNav from "@/components/dashboard/MobileNav";
-import SessionHistory from "@/components/dashboard/SessionHistory";
-import DetailedAnalytics from "@/components/dashboard/DetailedAnalytics";
-import TherapyAnalytics from "@/components/dashboard/TherapyAnalytics";
-import PremiumUpgradeModal from "@/components/dashboard/PremiumUpgradeModal";
+import SidebarSkeleton from "@/components/dashboard/Sidebar"; // Fallback
+import dynamic from "next/dynamic";
+
+// Dynamic components for browser-only features
+const EmotionGrid = dynamic(() => import("@/components/dashboard/EmotionGrid"), { ssr: false });
+const AnalysisControl = dynamic(() => import("@/components/dashboard/AnalysisControl"), { ssr: false });
+const ResultsPanel = dynamic(() => import("@/components/dashboard/ResultsPanel"), { ssr: false });
+const FusionExplanation = dynamic(() => import("@/components/dashboard/FusionExplanation"), { ssr: false });
+const MusicPlayer = dynamic(() => import("@/components/dashboard/MusicPlayer"), { ssr: false });
+const FeedbackSection = dynamic(() => import("@/components/dashboard/FeedbackSection"), { ssr: false });
+const AnalyticsOverview = dynamic(() => import("@/components/dashboard/AnalyticsOverview"), { ssr: false });
+const SystemStatusPanel = dynamic(() => import("@/components/dashboard/SystemStatusPanel"), { ssr: false });
+const VoiceAssistant = dynamic(() => import("@/components/VoiceAssistant"), { ssr: false });
+const QuickActions = dynamic(() => import("@/components/dashboard/QuickActions"), { ssr: false });
+const MobileNav = dynamic(() => import("@/components/dashboard/MobileNav"), { ssr: false });
+const SessionHistory = dynamic(() => import("@/components/dashboard/SessionHistory"), { ssr: false });
+const DetailedAnalytics = dynamic(() => import("@/components/dashboard/DetailedAnalytics"), { ssr: false });
+const TherapyAnalytics = dynamic(() => import("@/components/dashboard/TherapyAnalytics"), { ssr: false });
+const PremiumUpgradeModal = dynamic(() => import("@/components/dashboard/PremiumUpgradeModal"), { ssr: false });
 import { getFinalEmotion } from "@/lib/emotionFusion";
 import { sessionService } from "@/lib/sessionService";
 

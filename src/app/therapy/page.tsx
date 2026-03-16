@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { Music, Play, Pause, SkipForward, Info, CheckCircle2, HeartPulse, Activity } from "lucide-react";
 import { musicGenerator } from "@/lib/musicGeneration";
 import { bluetoothService } from "@/lib/bluetoothService";
-import VoiceAssistant from "@/components/VoiceAssistant";
+import dynamic from "next/dynamic";
 import { useBiometrics } from "@/context/BiometricContext";
+
+const VoiceAssistant = dynamic(() => import("@/components/VoiceAssistant"), { ssr: false });
 
 export default function TherapyPage() {
   const { bpm } = useBiometrics();
