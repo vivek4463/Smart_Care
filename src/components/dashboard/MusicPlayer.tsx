@@ -250,7 +250,7 @@ export default function MusicPlayer({ emotion }: MusicPlayerProps) {
             
             <div className="space-y-1">
               <h3 className="text-2xl md:text-4xl font-black text-white tracking-tighter leading-tight md:leading-[0.9]">
-                {aiAudioUrl ? 'AI-GENERATED' : params.instrument} <span className="text-brand-cyan">SYMPHONY</span>
+                {aiAudioUrl ? 'AI-GENERATED' : 'NEURAL'} <span className="text-brand-cyan">SYMPHONY</span>
               </h3>
               <p className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-wider">
                 Artist: <span className="text-white/60">Neural Core v4.5</span> • Album: <span className="text-white/60">Smart Session</span>

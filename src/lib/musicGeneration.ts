@@ -184,6 +184,12 @@ class MusicGenerator {
     }
   }
 
+  public setVolume(val: number) {
+    if (this.mainVol) {
+      this.mainVol.volume.value = Tone.gainToDb(val);
+    }
+  }
+
   public stop() {
     Tone.Transport.stop();
     this.loops.forEach(l => l.dispose());
