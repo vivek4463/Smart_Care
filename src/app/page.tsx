@@ -123,7 +123,9 @@ export default function LandingPage() {
 
       <footer className="relative z-10 py-12 border-t border-white/5 w-full max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 px-6">
         <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-cyan flex items-center justify-center text-brand-teal font-black text-sm">SC</div>
+            <div className="w-8 h-8 rounded-lg bg-brand-cyan/10 overflow-hidden flex items-center justify-center border border-brand-cyan/20">
+                <img src="/logo.png" alt="SC" className="w-full h-full object-cover scale-110" />
+            </div>
             <span className="text-white font-black tracking-tighter italic">SMART CARE</span>
         </div>
         <p className="text-white/20 text-xs font-medium uppercase tracking-[0.2em]">

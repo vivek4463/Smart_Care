@@ -27,8 +27,8 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, onToggleNot
   return (
     <aside className="w-72 hidden lg:flex flex-col glass-morphism border-r border-white/5 p-6 space-y-8 h-full">
       <div className="flex items-center gap-4 px-2 group">
-        <div className="w-10 h-10 rounded-xl bg-brand-cyan flex items-center justify-center text-brand-teal font-black shadow-[0_0_20px_rgba(0,242,255,0.4)] group-hover:rotate-12 transition-transform">
-          SC
+        <div className="w-10 h-10 rounded-xl bg-brand-cyan/20 overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(0,242,255,0.2)] group-hover:rotate-12 transition-transform border border-brand-cyan/30">
+          <img src="/logo.png" alt="Smart Care Logo" className="w-full h-full object-cover scale-110" />
         </div>
         <div className="flex flex-col">
           <span className="text-xl font-black text-white tracking-tighter italic leading-none">SMART CARE</span>
