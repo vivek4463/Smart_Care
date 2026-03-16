@@ -4,10 +4,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft, Brain, Sparkles, AlertCircle } from "lucide-react";
-import FaceDetection from "@/components/EmotionDetector/FaceDetection";
-import VoiceDetection from "@/components/EmotionDetector/VoiceDetection";
-import TextAnalysis from "@/components/EmotionDetector/TextAnalysis";
-import HeartRateMonitor from "@/components/EmotionDetector/HeartRateMonitor";
+import dynamic from "next/dynamic";
+
+// Dynamic components for browser-only features
+const FaceDetection = dynamic(() => import("@/components/EmotionDetector/FaceDetection"), { ssr: false });
+const VoiceDetection = dynamic(() => import("@/components/EmotionDetector/VoiceDetection"), { ssr: false });
+const TextAnalysis = dynamic(() => import("@/components/EmotionDetector/TextAnalysis"), { ssr: false });
+const HeartRateMonitor = dynamic(() => import("@/components/EmotionDetector/HeartRateMonitor"), { ssr: false });
 
 const STEPS = ["introduction", "face", "voice", "text", "biometric", "summary"];
 
