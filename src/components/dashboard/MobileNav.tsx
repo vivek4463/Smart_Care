@@ -12,8 +12,7 @@ export default function MobileNav({ activeTab, setActiveTab, onToggleNotificatio
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
     { id: 'history', icon: History, label: 'History' },
     { id: 'notifications', icon: Bell, label: 'Alerts', isToggle: true },
-    { id: 'insights', icon: BarChart2, label: 'Insights' },
-    { id: 'therapy_analytics', icon: Sparkles, label: 'Therapy' },
+    { id: 'profile', icon: User, label: 'Profile' },
   ];
 
   return (

@@ -18,14 +18,11 @@ const ResultsPanel = dynamic(() => import("@/components/dashboard/ResultsPanel")
 const FusionExplanation = dynamic(() => import("@/components/dashboard/FusionExplanation"), { ssr: false });
 const MusicPlayer = dynamic(() => import("@/components/dashboard/MusicPlayer"), { ssr: false });
 const FeedbackSection = dynamic(() => import("@/components/dashboard/FeedbackSection"), { ssr: false });
-const AnalyticsOverview = dynamic(() => import("@/components/dashboard/AnalyticsOverview"), { ssr: false });
 const SystemStatusPanel = dynamic(() => import("@/components/dashboard/SystemStatusPanel"), { ssr: false });
 const VoiceAssistant = dynamic(() => import("@/components/VoiceAssistant"), { ssr: false });
 const QuickActions = dynamic(() => import("@/components/dashboard/QuickActions"), { ssr: false });
 const MobileNav = dynamic(() => import("@/components/dashboard/MobileNav"), { ssr: false });
 const SessionHistory = dynamic(() => import("@/components/dashboard/SessionHistory"), { ssr: false });
-const DetailedAnalytics = dynamic(() => import("@/components/dashboard/DetailedAnalytics"), { ssr: false });
-const TherapyAnalytics = dynamic(() => import("@/components/dashboard/TherapyAnalytics"), { ssr: false });
 const PremiumUpgradeModal = dynamic(() => import("@/components/dashboard/PremiumUpgradeModal"), { ssr: false });
 import { getFinalEmotion } from "@/lib/emotionFusion";
 import { sessionService } from "@/lib/sessionService";
@@ -367,31 +364,7 @@ export default function DashboardPage() {
               </section>
             )}
 
-            {activeTab === "insights" && (
-              <section className="space-y-10">
-                <div className="flex items-center gap-4">
-                  <span className="w-12 h-12 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan font-black italic">A</span>
-                  <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Neural Insights</h2>
-                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Algorithmic Patterns & Trends</p>
-                  </div>
-                </div>
-                <DetailedAnalytics />
-              </section>
-            )}
 
-            {activeTab === "therapy_analytics" && (
-              <section className="space-y-10">
-                <div className="flex items-center gap-4">
-                  <span className="w-12 h-12 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center text-brand-mint font-black italic">T</span>
-                  <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Therapy Efficacy</h2>
-                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Acoustic Impact & Bio-Response</p>
-                  </div>
-                </div>
-                <TherapyAnalytics />
-              </section>
-            )}
 
             {activeTab === "profile" && (
               <section className="space-y-10">

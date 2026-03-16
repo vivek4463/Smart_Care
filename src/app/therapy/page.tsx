@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Music, Play, Pause, SkipForward, Info, CheckCircle2, HeartPulse, Activity } from "lucide-react";
 import { musicGenerator } from "@/lib/musicGeneration";
-import { bluetoothService } from "@/lib/bluetoothService";
 import dynamic from "next/dynamic";
 import { useBiometrics } from "@/context/BiometricContext";
 
@@ -17,7 +16,6 @@ export default function TherapyPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes
   const [localBpm, setLocalBpm] = useState<number | null>(null);
-  const [isBtConnected, setIsBtConnected] = useState(false);
   const router = useRouter();
   const displayBpm = localBpm || bpm;
 
@@ -51,19 +49,8 @@ export default function TherapyPage() {
     setIsPlaying(!isPlaying);
   };
 
-  const connectBluetooth = async () => {
-    const success = await bluetoothService.connect();
-    if (success) {
-      setIsBtConnected(true);
-      bluetoothService.onHeartRate((data) => {
-        setLocalBpm(data.bpm);
-      });
-    }
-  };
-
   const handleFinish = () => {
     musicGenerator.stop();
-    bluetoothService.disconnect();
     router.push("/feedback");
   };
 
@@ -103,20 +90,6 @@ export default function TherapyPage() {
         </div>
 
         <div className="flex gap-4">
-          {/* Bluetooth Status */}
-          <motion.button 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={connectBluetooth}
-            className={`p-6 rounded-[2rem] glass-morphism border-white/5 flex flex-col items-center gap-2 min-w-[140px] shadow-[0_15px_40px_rgba(0,0,0,0.4)] relative overflow-hidden group ${isBtConnected ? 'text-brand-mint' : 'text-white/40'}`}
-          >
-            <div className={`absolute inset-0 ${isBtConnected ? 'bg-brand-mint/5' : 'bg-white/5'}`} />
-            <div className="relative z-10 flex flex-col items-center gap-1">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">{isBtConnected ? 'Connected' : 'Connect BPM'}</span>
-              <div className="text-3xl font-black tabular-nums tracking-tighter">{displayBpm || '--'}</div>
-              <span className="text-[8px] font-black uppercase tracking-widest opacity-40">BPM Monitor</span>
-            </div>
-          </motion.button>
 
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
