@@ -118,8 +118,7 @@ class MusicGenerator {
     this.delay = new Tone.PingPongDelay("4n.", 0.2).connect(this.reverb);
 
     this.leadSynth = new Tone.PolySynth(Tone.Synth, {
-      envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 1 },
-      oscillator: { detune: 5 } // Micro-detuning for analog feel
+      envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 1 }
     }).connect(this.delay);
 
     this.padSynth = new Tone.PolySynth(Tone.Synth, {
