@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
-import * as faceapi from "face-api.js";
+import * as tf from "@tensorflow/tfjs";
+import * as faceapi from "@vladmandic/face-api";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, AlertCircle, RefreshCw, Activity } from "lucide-react";
 
@@ -14,65 +15,80 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadModels = async () => {
       try {
+        await tf.ready();
         const MODEL_URL = "/models";
+        
+        // Use tinyFaceDetector for better performance in browser
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         ]);
-        setIsLoaded(true);
+        
+        if (isMounted) setIsLoaded(true);
       } catch (err) {
         console.error("Face-api models load failed:", err);
-        setError("Neural Models Unavailable. Ensure /public/models contains required face-api data.");
+        if (isMounted) setError("Neural Models Unavailable. Ensure /public/models contains required face-api data.");
       }
     };
     loadModels();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
 
-    const interval = setInterval(async () => {
+    let interval: NodeJS.Timeout;
+
+    const runDetection = async () => {
       if (webcamRef.current && webcamRef.current.video?.readyState === 4) {
-        const video = webcamRef.current.video;
+        try {
+          const video = webcamRef.current.video;
 
-        const detection = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-          .withFaceExpressions();
+          const detection = await faceapi
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .withFaceExpressions();
 
-        if (detection) {
-          // Find the expression with highest probability
-          const expressions = detection.expressions;
-          const bestMatch = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
+          if (detection) {
+            const expressions = detection.expressions;
+            // Filter out expressions with very low probability
+            const bestMatch = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
 
-          const rawEmotion = bestMatch[0];
-          const score = bestMatch[1];
+            const rawEmotion = bestMatch[0];
+            const score = bestMatch[1];
 
-          // Map face-api emotions to more descriptive labels for our engine
-          const emotionMap: Record<string, string> = {
-            neutral: "Neutral",
-            happy: "Happy",
-            sad: "Sad",
-            angry: "Angry",
-            fearful: "Fearful",
-            disgusted: "Disgusted",
-            surprised: "Surprised"
-          };
+            const emotionMap: Record<string, string> = {
+              neutral: "Neutral",
+              happy: "Happy",
+              sad: "Sad",
+              angry: "Angry",
+              fearful: "Fearful",
+              disgusted: "Disgusted",
+              surprised: "Surprised"
+            };
 
-          const mappedEmotion = emotionMap[rawEmotion] || "Neutral";
+            const mappedEmotion = emotionMap[rawEmotion] || "Neutral";
 
-          setEmotion(mappedEmotion);
-          setConfidence(Math.round(score * 100));
+            setEmotion(mappedEmotion);
+            setConfidence(Math.round(score * 100));
 
-          // Pass detection details to the parent
-          if (onEmotionDetected && score > 0.5) {
-            onEmotionDetected({ emotion: mappedEmotion, confidence: score });
+            if (onEmotionDetected && score > 0.55) {
+              onEmotionDetected({ emotion: mappedEmotion, confidence: score });
+            }
+          } else {
+            setEmotion("Scanning...");
+            setConfidence(0);
           }
+        } catch (err) {
+          console.error("Detection error:", err);
         }
       }
-    }, 500); // Increased frequency for smoother feedback
+    };
+
+    interval = setInterval(runDetection, 300); // Higher frequency for better responsiveness
 
     return () => clearInterval(interval);
   }, [isLoaded, onEmotionDetected]);
@@ -103,7 +119,7 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
             />
 
             <div className="absolute top-3 left-3 z-20">
-              <div className="px-3 py-1 rounded-full glass-morphism text-[10px] font-bold text-brand-cyan flex items-center gap-1">
+              <div className="px-3 py-1 rounded-full glass-morphism text-[10px] font-bold text-brand-cyan flex items-center gap-1 border border-brand-cyan/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse" />
                 NEURAL FEED ACTIVE
               </div>
@@ -124,9 +140,8 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
               </AnimatePresence>
             </div>
 
-            {/* Simulated UI Overlays */}
             <div className="absolute inset-0 pointer-events-none border-[1px] border-white/5 rounded-2xl">
-              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-brand-cyan/10" style={{ animation: 'scan 4s linear infinite' }} />
+              <div className="absolute top-1/2 left-0 w-full h-[1px] bg-brand-cyan/20 shadow-[0_0_15px_rgba(0,242,255,0.2)]" style={{ animation: 'scan 4s linear infinite' }} />
             </div>
           </>
         )}
@@ -151,19 +166,19 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
         <div className="p-4 rounded-xl bg-white/5 border border-white/5 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-brand-cyan/20" />
           <span className="text-[10px] font-bold text-white/20 uppercase block mb-1 tracking-tighter">Certainty index</span>
-          <div className="text-2xl font-black text-brand-cyan">{confidence}%</div>
+          <div className="text-2xl font-black text-brand-cyan tabular-nums tracking-tighter">{confidence}%</div>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/5 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-brand-mint/20" />
           <span className="text-[10px] font-bold text-white/20 uppercase block mb-1 tracking-tighter">Dominant Mood</span>
-          <div className="text-2xl font-black text-brand-mint italic uppercase truncate">{emotion === "Detecting..." ? "Scanning" : emotion}</div>
+          <div className="text-2xl font-black text-brand-mint italic uppercase truncate tracking-tighter">{emotion === "Detecting..." ? "Scanning" : emotion}</div>
         </div>
       </div>
 
       <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-white/5 border border-white/5">
         <Camera className="w-5 h-5 text-brand-cyan mt-1" />
         <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase tracking-wider">
-          Biometric extraction synchronized with TinyFace v2.1. Spatial mapping active. Emotion labels derived from localized neural weightings.
+          Biometric extraction synchronized with Neural v2.5. Spatial mapping active. Emotion labels derived from localized neural weightings.
         </p>
       </div>
 

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, BarChart2, Zap, Brain, Heart } from "lucide-react";
 import { sessionService } from "@/lib/sessionService";
 import { authService } from "@/lib/authService";
 
 export default function DetailedAnalytics() {
   const [stats, setStats] = useState<any>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,19 +85,48 @@ export default function DetailedAnalytics() {
             </div>
         </div>
         
-        <div className="flex-1 flex items-end justify-between gap-4 py-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-3 group">
-                    <div className="relative w-full flex items-end justify-center h-48">
-                        <motion.div 
-                            initial={{ height: 0 }}
-                            animate={{ height: `${20 + Math.random() * 80}%` }}
-                            className="w-full bg-brand-cyan/20 border-t-2 border-brand-cyan/40 rounded-t-lg group-hover:bg-brand-cyan/40 transition-all cursor-crosshair"
-                        />
+        <div className="flex-1 flex items-end justify-between gap-4 py-4 relative group/chart">
+            {Array.from({ length: 12 }).map((_, i) => {
+                const percentage = Math.floor(20 + Math.random() * 80);
+                return (
+                    <div 
+                        key={i} 
+                        className="flex-1 flex flex-col items-center gap-3 relative group"
+                        onMouseEnter={() => setHoveredIndex(i)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                    >
+                        <div className="relative w-full flex items-end justify-center h-48">
+                            <motion.div 
+                                initial={{ height: 0 }}
+                                animate={{ height: `${percentage}%` }}
+                                className="w-full bg-brand-cyan/20 border-t-2 border-brand-cyan/40 rounded-t-lg group-hover:bg-brand-cyan/60 transition-all cursor-crosshair relative"
+                            />
+                            
+                            <AnimatePresence>
+                                {hoveredIndex === i && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: -5, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-2 rounded-xl bg-white/10 backdrop-blur-xl border border-white/10 text-[10px] font-black text-white whitespace-nowrap z-50 shadow-2xl pointer-events-none"
+                                    >
+                                        <div className="flex flex-col items-center">
+                                            <span className="uppercase tracking-[0.2em] opacity-40 text-[8px]">Temporal Point</span>
+                                            <span className="text-brand-cyan text-xs">{i + 1}h Sync</span>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className="w-1 h-1 rounded-full bg-brand-mint" />
+                                                <span className="text-white/60">{percentage}% Impact</span>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white/10" />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                        <span className="text-[8px] text-white/20 font-black uppercase tracking-widest">{i+1}h</span>
                     </div>
-                    <span className="text-[8px] text-white/20 font-black uppercase tracking-widest">{i+1}h</span>
-                </div>
-            ))}
+                );
+            })}
         </div>
       </div>
     </div>
