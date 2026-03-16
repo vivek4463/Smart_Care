@@ -91,6 +91,30 @@ export const MOOD_MAPPINGS: Record<string, MoodProfile> = {
     padPool: ["fatsawtooth"], 
     bassPool: ["triangle"],
     intensity: 0.7 
+  },
+  "Astonishment": {
+    baseBpm: 110,
+    scale: "D4 mixolydian",
+    leadPool: ["sine", "fmtriangle"],
+    padPool: ["fatsawtooth"],
+    bassPool: ["sawtooth"],
+    intensity: 0.7
+  },
+  "Calm": {
+    baseBpm: 60,
+    scale: "C4 pentatonic",
+    leadPool: ["sine", "triangle"],
+    padPool: ["sine"],
+    bassPool: ["triangle"],
+    intensity: 0.2
+  },
+  "Excited": {
+    baseBpm: 135,
+    scale: "D4 mixolydian",
+    leadPool: ["sawtooth", "square"],
+    padPool: ["fatsawtooth"],
+    bassPool: ["sawtooth"],
+    intensity: 0.9
   }
 };
 
@@ -113,7 +137,7 @@ class MusicGenerator {
   }
 
   private initAudioChain() {
-    this.mainVol = new Tone.Volume(-12).toDestination();
+    this.mainVol = new Tone.Volume(-15).toDestination();
     this.reverb = new Tone.Reverb({ decay: 4, wet: 0.4 }).connect(this.mainVol);
     this.delay = new Tone.PingPongDelay("4n.", 0.2).connect(this.reverb);
 
@@ -146,9 +170,21 @@ class MusicGenerator {
     Tone.Transport.bpm.value = profile.baseBpm;
 
     // 1. RANDOMIZE INSTRUMENTS FROM POOLS
-    if (this.leadSynth) this.leadSynth.set({ oscillator: { type: this.pickRandom(profile.leadPool) } });
-    if (this.padSynth) this.padSynth.set({ oscillator: { type: this.pickRandom(profile.padPool) } });
-    if (this.bassSynth) this.bassSynth.set({ oscillator: { type: this.pickRandom(profile.bassPool) } });
+    if (this.leadSynth) {
+        this.leadSynth.set({ 
+            oscillator: { type: this.pickRandom(profile.leadPool) } 
+        });
+    }
+    if (this.padSynth) {
+        this.padSynth.set({ 
+            oscillator: { type: this.pickRandom(profile.padPool) } 
+        });
+    }
+    if (this.bassSynth) {
+        this.bassSynth.set({ 
+            oscillator: { type: this.pickRandom(profile.bassPool) as any } 
+        });
+    }
 
     // 2. RANDOMIZE FX PARAMETERS
     if (this.reverb) this.reverb.set({ decay: 2 + Math.random() * 4 });
@@ -161,14 +197,15 @@ class MusicGenerator {
     const leadLoop = new Tone.Loop((time) => {
       if (!this.leadSynth) return;
       
-      // Randomize rhythm
+      // Randomize rhythm and density
       const coin = Math.random();
       if (coin < profile.intensity) {
+        // Humanize timing
+        const offset = Math.random() * 0.05;
         const note = scale[Math.floor(Math.random() * scale.length)];
-        // Random velocity for human feel
-        const vel = 0.4 + Math.random() * 0.3;
+        const vel = 0.3 + Math.random() * 0.4;
         const duration = coin > 0.8 ? "8n" : "4n";
-        this.leadSynth.triggerAttackRelease(note, duration, time, vel);
+        this.leadSynth.triggerAttackRelease(note, duration, time + offset, vel);
       }
     }, "4n");
 
@@ -176,7 +213,6 @@ class MusicGenerator {
     const padLoop = new Tone.Loop((time) => {
       if (!this.padSynth) return;
       
-      // Define a basic progression: I, IV, vi, V
       const progression = [
         [scale[0], scale[2], scale[4]], // I
         [scale[3], scale[5], scale[7] || scale[0]], // IV
@@ -185,7 +221,7 @@ class MusicGenerator {
       ];
       
       const chord = progression[this.currentProgressionIndex];
-      this.padSynth.triggerAttackRelease(chord, "4m", time, 0.15);
+      this.padSynth.triggerAttackRelease(chord, "4m", time, 0.1);
       
       this.currentProgressionIndex = (this.currentProgressionIndex + 1) % progression.length;
     }, "4m");
@@ -194,7 +230,7 @@ class MusicGenerator {
     const bassLoop = new Tone.Loop((time) => {
       if (!this.bassSynth) return;
       const root = scale[0].replace(/[0-9]/g, '2');
-      this.bassSynth.triggerAttackRelease(root, "1m", time, 0.3);
+      this.bassSynth.triggerAttackRelease(root, "1m", time, 0.25);
     }, "2m");
 
     this.loops = [leadLoop, padLoop, bassLoop];
@@ -215,7 +251,7 @@ class MusicGenerator {
       this.mainVol.volume.rampTo(-10, 3);
       Tone.Transport.bpm.rampTo(profile.baseBpm * 1.3, 5);
     } else {
-      this.mainVol.volume.rampTo(-12, 3);
+      this.mainVol.volume.rampTo(-15, 3);
       Tone.Transport.bpm.rampTo(profile.baseBpm, 5);
     }
   }
@@ -225,6 +261,9 @@ class MusicGenerator {
     this.loops.forEach(l => l.dispose());
     this.loops = [];
     this.isPlaying = false;
+    if (this.leadSynth) this.leadSynth.releaseAll();
+    if (this.padSynth) this.padSynth.releaseAll();
+    if (this.bassSynth) this.bassSynth.triggerRelease();
   }
 
   private pickRandom<T>(arr: T[]): T {
@@ -232,17 +271,26 @@ class MusicGenerator {
   }
 
   private getNotesForScale(scale: string): string[] {
+    const octaves = scale.match(/\d+/) ? [scale.match(/\d+/)![0]] : ["3", "4"];
+    const baseOctave = parseInt(octaves[0]);
+    
     const majors: Record<string, string[]> = {
-      "C4 major": ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"],
-      "F3 lydian": ["F3", "G3", "A3", "B3", "C4", "D4", "E4", "F4"]
+      "C4 major": ["C", "D", "E", "F", "G", "A", "B", "C"],
+      "F3 lydian": ["F", "G", "A", "B", "C", "D", "E", "F"]
     };
     const minors: Record<string, string[]> = {
-      "A3 minor": ["A3", "B3", "C4", "D4", "E4", "F4", "G4", "A4"],
-      "G3 phrygian": ["G3", "Ab3", "Bb3", "C4", "D4", "Eb4", "F4", "G4"],
-      "C3 locrian": ["C3", "Db3", "Eb3", "F3", "Gb3", "Ab3", "Bb3", "C4"]
+      "A3 minor": ["A", "B", "C", "D", "E", "F", "G", "A"],
+      "G3 phrygian": ["G", "Ab", "Bb", "C", "D", "Eb", "F", "G"],
+      "C3 locrian": ["C", "Db", "Eb", "F", "Gb", "Ab", "Bb", "C"]
     };
 
-    return majors[scale] || minors[scale] || ["C4", "E4", "G4", "B4"];
+    let notes = majors[scale] || minors[scale] || ["C", "E", "G", "B"];
+    
+    // Fallback if scale includes certain keywords
+    if (scale.includes("pentatonic")) notes = ["C", "D", "E", "G", "A", "C"];
+    if (scale.includes("mixolydian")) notes = ["D", "E", "Fs", "G", "A", "B", "C", "D"];
+
+    return notes.map(n => `${n}${baseOctave + (Math.random() > 0.8 ? 1 : 0)}`);
   }
 }
 

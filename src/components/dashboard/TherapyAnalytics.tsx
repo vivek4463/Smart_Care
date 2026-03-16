@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { sessionService } from "@/lib/sessionService";
 import { authService } from "@/lib/authService";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Music, TrendingUp, Sparkles } from "lucide-react";
 
 export default function TherapyAnalytics() {
@@ -80,26 +80,54 @@ export default function TherapyAnalytics() {
 }
 
 function ActivityBox({ title, icon, color }: any) {
-   return (
-      <div className="premium-card p-6 space-y-6">
-         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-               <div className={`p-2 rounded-lg bg-${color}/10 text-${color}`}>
-                  {icon}
-               </div>
-               <h4 className="text-xs font-black text-white uppercase tracking-widest">{title}</h4>
-            </div>
-         </div>
-         <div className="h-32 flex items-end gap-1">
-            {Array.from({ length: 20 }).map((_, i) => (
-               <motion.div 
-                  key={i}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${30 + Math.random() * 70}%` }}
-                  className={`flex-1 rounded-t-sm bg-${color}/20 group-hover:bg-${color}/40 transition-all`}
-               />
-            ))}
-         </div>
-      </div>
-   );
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  return (
+     <div className="premium-card p-6 space-y-6">
+        <div className="flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-${color}/10 text-${color}`}>
+                 {icon}
+              </div>
+              <h4 className="text-xs font-black text-white uppercase tracking-widest">{title}</h4>
+           </div>
+        </div>
+        <div className="h-32 flex items-end gap-1 relative group/chart">
+           {Array.from({ length: 20 }).map((_, i) => {
+              const percentage = Math.floor(30 + Math.random() * 70);
+              return (
+                 <div 
+                    key={i} 
+                    className="flex-1 h-full flex items-end relative"
+                    onMouseEnter={() => setHoveredIndex(i)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                 >
+                    <motion.div 
+                       initial={{ height: 0 }}
+                       animate={{ height: `${percentage}%` }}
+                       className={`w-full rounded-t-sm bg-${color}/20 group-hover/chart:bg-${color}/10 hover:!bg-${color}/60 transition-all cursor-pointer relative`}
+                    />
+                    
+                    <AnimatePresence>
+                       {hoveredIndex === i && (
+                          <motion.div 
+                             initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                             animate={{ opacity: 1, y: -5, scale: 1 }}
+                             exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-black text-white whitespace-nowrap z-50 shadow-2xl pointer-events-none"
+                          >
+                             <div className="flex flex-col items-center">
+                                <span className="uppercase tracking-widest opacity-60">Cycle {i + 1}</span>
+                                <span className="text-brand-cyan text-xs">{percentage}% Impact</span>
+                             </div>
+                             <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-white/10" />
+                          </motion.div>
+                       )}
+                    </AnimatePresence>
+                 </div>
+              );
+           })}
+        </div>
+     </div>
+  );
 }

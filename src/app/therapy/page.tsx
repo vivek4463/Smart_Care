@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Music, Play, Pause, SkipForward, Info, CheckCircle2, HeartPulse, Activity } from "lucide-react";
 import { musicGenerator } from "@/lib/musicGeneration";
+import { bluetoothService } from "@/lib/bluetoothService";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import { useBiometrics } from "@/context/BiometricContext";
 
@@ -13,6 +14,8 @@ export default function TherapyPage() {
   const [sessionData, setSessionData] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes
+  const [bpm, setBpm] = useState<number | null>(null);
+  const [isBtConnected, setIsBtConnected] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -45,8 +48,19 @@ export default function TherapyPage() {
     setIsPlaying(!isPlaying);
   };
 
+  const connectBluetooth = async () => {
+    const success = await bluetoothService.connect();
+    if (success) {
+      setIsBtConnected(true);
+      bluetoothService.onHeartRate((data) => {
+        setBpm(data.bpm);
+      });
+    }
+  };
+
   const handleFinish = () => {
     musicGenerator.stop();
+    bluetoothService.disconnect();
     router.push("/feedback");
   };
 
@@ -85,28 +99,45 @@ export default function TherapyPage() {
           </motion.div>
         </div>
 
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-6 rounded-[2rem] glass-morphism border-white/5 flex flex-col items-center gap-4 min-w-[180px] shadow-[0_15px_40px_rgba(0,0,0,0.4)] relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-brand-cyan/5" />
-          <div className="relative z-10 w-full space-y-3">
-            <div className="flex justify-between items-center px-1">
-                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Temporal Flow</span>
-                <span className="text-[10px] font-black text-brand-cyan uppercase tracking-widest">{formatTime(timer)} LFT</span>
+        <div className="flex gap-4">
+          {/* Bluetooth Status */}
+          <motion.button 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={connectBluetooth}
+            className={`p-6 rounded-[2rem] glass-morphism border-white/5 flex flex-col items-center gap-2 min-w-[140px] shadow-[0_15px_40px_rgba(0,0,0,0.4)] relative overflow-hidden group ${isBtConnected ? 'text-brand-mint' : 'text-white/40'}`}
+          >
+            <div className={`absolute inset-0 ${isBtConnected ? 'bg-brand-mint/5' : 'bg-white/5'}`} />
+            <div className="relative z-10 flex flex-col items-center gap-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">{isBtConnected ? 'Connected' : 'Connect BPM'}</span>
+              <div className="text-3xl font-black tabular-nums tracking-tighter">{bpm || '--'}</div>
+              <span className="text-[8px] font-black uppercase tracking-widest opacity-40">BPM Monitor</span>
             </div>
-            <div className="text-5xl font-black text-white tabular-nums tracking-tighter text-center">{formatTime(timer)}</div>
-            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                <motion.div 
-                initial={{ width: "100%" }}
-                animate={{ width: `${(timer / 180) * 100}%` }}
-                className="h-full bg-gradient-to-r from-brand-cyan to-brand-mint shadow-[0_0_15px_rgba(0,242,255,0.5)]"
-                transition={{ duration: 1, ease: "linear" }}
-                />
+          </motion.button>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="p-6 rounded-[2rem] glass-morphism border-white/5 flex flex-col items-center gap-4 min-w-[180px] shadow-[0_15px_40px_rgba(0,0,0,0.4)] relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-brand-cyan/5" />
+            <div className="relative z-10 w-full space-y-3">
+              <div className="flex justify-between items-center px-1">
+                  <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Temporal Flow</span>
+                  <span className="text-[10px] font-black text-brand-cyan uppercase tracking-widest">{formatTime(timer)} LFT</span>
+              </div>
+              <div className="text-5xl font-black text-white tabular-nums tracking-tighter text-center">{formatTime(timer)}</div>
+              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                  <motion.div 
+                  initial={{ width: "100%" }}
+                  animate={{ width: `${(timer / 180) * 100}%` }}
+                  className="h-full bg-gradient-to-r from-brand-cyan to-brand-mint shadow-[0_0_15px_rgba(0,242,255,0.5)]"
+                  transition={{ duration: 1, ease: "linear" }}
+                  />
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-2 gap-10">
