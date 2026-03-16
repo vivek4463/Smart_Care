@@ -47,8 +47,8 @@ export default function LoginPage() {
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-brand-cyan/20 blur-[80px] rounded-full" />
           
           <div className="text-center relative z-10 space-y-6">
-            <div className="inline-flex p-5 rounded-3xl bg-brand-cyan/10 text-brand-cyan mb-2 shadow-[0_10px_30px_rgba(0,242,255,0.2)]">
-              <Sparkles className="w-12 h-12" />
+            <div className="inline-flex w-24 h-24 rounded-3xl bg-brand-cyan/10 overflow-hidden p-2 shadow-[0_10px_30px_rgba(0,242,255,0.2)] border border-brand-cyan/20">
+              <img src="/logo.png" alt="Smart Care Logo" className="w-full h-full object-cover scale-110" />
             </div>
             <div className="space-y-2">
                 <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none">
