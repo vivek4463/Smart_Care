@@ -14,9 +14,10 @@ export default function TherapyPage() {
   const [sessionData, setSessionData] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes
-  const [bpm, setBpm] = useState<number | null>(null);
+  const [localBpm, setLocalBpm] = useState<number | null>(null);
   const [isBtConnected, setIsBtConnected] = useState(false);
   const router = useRouter();
+  const displayBpm = localBpm || bpm;
 
   useEffect(() => {
     const data = localStorage.getItem("smart_care_session");
@@ -34,10 +35,10 @@ export default function TherapyPage() {
   }, [isPlaying, timer]);
 
   useEffect(() => {
-    if (isPlaying && bpm) {
-      musicGenerator.updateBpm(bpm);
+    if (isPlaying && displayBpm) {
+      musicGenerator.updateBpm(displayBpm);
     }
-  }, [bpm, isPlaying]);
+  }, [displayBpm, isPlaying]);
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -53,7 +54,7 @@ export default function TherapyPage() {
     if (success) {
       setIsBtConnected(true);
       bluetoothService.onHeartRate((data) => {
-        setBpm(data.bpm);
+        setLocalBpm(data.bpm);
       });
     }
   };
@@ -110,7 +111,7 @@ export default function TherapyPage() {
             <div className={`absolute inset-0 ${isBtConnected ? 'bg-brand-mint/5' : 'bg-white/5'}`} />
             <div className="relative z-10 flex flex-col items-center gap-1">
               <span className="text-[10px] font-black uppercase tracking-[0.3em]">{isBtConnected ? 'Connected' : 'Connect BPM'}</span>
-              <div className="text-3xl font-black tabular-nums tracking-tighter">{bpm || '--'}</div>
+              <div className="text-3xl font-black tabular-nums tracking-tighter">{displayBpm || '--'}</div>
               <span className="text-[8px] font-black uppercase tracking-widest opacity-40">BPM Monitor</span>
             </div>
           </motion.button>
@@ -253,8 +254,8 @@ export default function TherapyPage() {
             transition={{ delay: 0.2 }}
             className="px-5 py-2.5 rounded-2xl glass-morphism text-[10px] font-black text-brand-mint flex items-center gap-3 border-brand-mint/20 shadow-2xl"
         >
-          <div className={`w-2 h-2 rounded-full ${bpm ? 'bg-brand-mint animate-pulse shadow-[0_0_10px_#00ffcc]' : 'bg-white/10'}`} /> 
-          <span className="tracking-[0.2em]">{bpm ? `${bpm} BPM LIVE SYNC` : "ADAPTIVE SYNCHRONIZATION"}</span>
+          <div className={`w-2 h-2 rounded-full ${displayBpm ? 'bg-brand-mint animate-pulse shadow-[0_0_10px_#00ffcc]' : 'bg-white/10'}`} /> 
+          <span className="tracking-[0.2em]">{displayBpm ? `${displayBpm} BPM LIVE SYNC` : "ADAPTIVE SYNCHRONIZATION"}</span>
         </motion.div>
       </div>
     </main>
