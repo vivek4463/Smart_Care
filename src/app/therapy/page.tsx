@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Music, Play, Pause, SkipForward, Info, CheckCircle2, HeartPulse } from "lucide-react";
+import { Music, Play, Pause, SkipForward, Info, CheckCircle2, HeartPulse, Activity } from "lucide-react";
 import { musicGenerator } from "@/lib/musicGeneration";
 import VoiceAssistant from "@/components/VoiceAssistant";
+import { useBiometrics } from "@/context/BiometricContext";
 
 export default function TherapyPage() {
+  const { bpm } = useBiometrics();
   const [sessionData, setSessionData] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes
@@ -27,6 +29,12 @@ export default function TherapyPage() {
     }
     return () => clearInterval(interval);
   }, [isPlaying, timer]);
+
+  useEffect(() => {
+    if (isPlaying && bpm) {
+      musicGenerator.updateBpm(bpm);
+    }
+  }, [bpm, isPlaying]);
 
   const togglePlayback = () => {
     if (isPlaying) {
@@ -214,8 +222,8 @@ export default function TherapyPage() {
             transition={{ delay: 0.2 }}
             className="px-5 py-2.5 rounded-2xl glass-morphism text-[10px] font-black text-brand-mint flex items-center gap-3 border-brand-mint/20 shadow-2xl"
         >
-          <div className="w-2 h-2 rounded-full bg-brand-mint shadow-[0_0_10px_#00ffcc]" /> 
-          <span className="tracking-[0.2em]">ADAPTIVE SYNCHRONIZATION</span>
+          <div className={`w-2 h-2 rounded-full ${bpm ? 'bg-brand-mint animate-pulse shadow-[0_0_10px_#00ffcc]' : 'bg-white/10'}`} /> 
+          <span className="tracking-[0.2em]">{bpm ? `${bpm} BPM LIVE SYNC` : "ADAPTIVE SYNCHRONIZATION"}</span>
         </motion.div>
       </div>
     </main>

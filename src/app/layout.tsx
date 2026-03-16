@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Advanced AI music therapy for emotional wellness and personalized soundscapes.",
 };
 
+import { BiometricProvider } from "@/context/BiometricContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <BiometricProvider>
+          {children}
+        </BiometricProvider>
       </body>
     </html>
   );

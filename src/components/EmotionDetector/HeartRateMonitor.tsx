@@ -3,19 +3,29 @@
 import { useState } from "react";
 import { Watch, Bluetooth, Activity, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBiometrics } from "@/context/BiometricContext";
 
 export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateDetected?: (bpm: number) => void }) {
-  const [bpm, setBpm] = useState<number | null>(null);
+  const { 
+    bpm, 
+    connectionType, 
+    isSearching, 
+    isConnected, 
+    connect, 
+    disconnect, 
+    simulate,
+    setBpmManual 
+  } = useBiometrics();
+
   const [manualBpm, setManualBpm] = useState<string>("");
-  const [isConnected, setIsConnected] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [advice, setAdvice] = useState<string>("");
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const val = parseInt(manualBpm);
     if (!isNaN(val) && val > 30 && val < 220) {
-      setBpm(val);
+      setBpmManual(val);
       processBpmRules(val);
       if (onHeartRateDetected) onHeartRateDetected(val);
     }
@@ -31,55 +41,28 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
     }
   };
 
-  const connectWatch = async () => {
-    setIsSearching(true);
-    try {
-      // @ts-ignore - Web Bluetooth API
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['heart_rate'] }]
-      });
-
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService('heart_rate');
-      const characteristic = await service.getCharacteristic('heart_rate_measurement');
-
-      await characteristic.startNotifications();
-      setIsConnected(true);
-      setIsSearching(false);
-
-      characteristic.addEventListener('characteristicvaluechanged', (event: any) => {
-        const value = event.target.value;
-        // Heart Rate Measurement format (first byte is flags, second is BPM)
-        const heartRate = value.getUint8(1);
-        setBpm(heartRate);
-        processBpmRules(heartRate);
-        if (onHeartRateDetected) onHeartRateDetected(heartRate);
-      });
-
-      device.addEventListener('gattserverdisconnected', () => {
-        setIsConnected(false);
-        setBpm(null);
-      });
-
-    } catch (error) {
-      console.error('Bluetooth Sync Error:', error);
-      setIsSearching(false);
-      // Fallback for demo purposes if Bluetooth fails or is canceled
-      if (confirm("Bluetooth pairing failed or canceled. Enter demo mode with simulated signals?")) {
-        simulateHeartRate();
-      }
-    }
+  const openPairingModal = () => {
+    setIsModalOpen(true);
   };
 
-  const simulateHeartRate = () => {
-    setIsConnected(true);
-    const interval = setInterval(() => {
-      const newBpm = 70 + Math.floor(Math.random() * 15);
-      setBpm(newBpm);
-      processBpmRules(newBpm);
-      if (onHeartRateDetected) onHeartRateDetected(newBpm);
-    }, 5000);
-    return () => clearInterval(interval);
+  const closePairingModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleConnectRequest = async () => {
+    try {
+      await connect();
+      closePairingModal();
+    } catch (error: any) {
+      closePairingModal();
+      const isCancellation = error.name === 'NotFoundError' || (error.message && error.message.toLowerCase().includes('cancel'));
+      
+      if (!isCancellation) {
+        if (confirm("Bluetooth pairing failed. Enter demo mode with simulated signals?")) {
+          simulate();
+        }
+      }
+    }
   };
 
   return (
@@ -94,7 +77,9 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
         </h3>
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-brand-mint shadow-[0_0_8px_#00ffcc]' : 'bg-red-500'}`} />
-          <span className="text-[10px] font-bold text-white/40 tracking-widest">{isConnected ? 'PAIRED' : 'DISCONNECTED'}</span>
+          <span className="text-[10px] font-bold text-white/40 tracking-widest">
+            {connectionType === 'bluetooth' ? 'PAIRED' : connectionType === 'simulated' ? 'SIMULATED' : 'DISCONNECTED'}
+          </span>
         </div>
       </div>
 
@@ -107,7 +92,7 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                onClick={connectWatch}
+                onClick={openPairingModal}
                 disabled={isSearching}
                 className="group relative"
               >
@@ -125,10 +110,16 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
                 className="flex flex-col items-center gap-4"
               >
                 <div className="text-7xl font-black text-brand-cyan flex items-baseline gap-2">
-                  {bpm}
+                  {bpm || "--"}
                   <span className="text-sm font-medium text-white/40 uppercase tracking-widest">BPM</span>
                 </div>
                 <Activity className="w-12 h-12 text-brand-mint animate-pulse" />
+                <button 
+                  onClick={disconnect}
+                  className="mt-4 px-4 py-2 border border-brand-cyan/30 rounded-full text-[10px] uppercase tracking-widest text-brand-cyan hover:bg-brand-cyan/10 transition-colors"
+                >
+                  Disconnect
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -169,8 +160,8 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
         <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-1">
           <span className="text-[10px] text-white/30 uppercase tracking-widest">Signal Method</span>
           <span className="text-sm font-bold text-white flex items-center gap-2">
-            {isConnected ? <Bluetooth className="w-3 h-3 text-brand-cyan" /> : <Activity className="w-3 h-3 text-brand-cyan" />}
-            {isConnected ? 'BLE Protocol' : 'Manual Rules'}
+            {connectionType === 'bluetooth' ? <Bluetooth className="w-3 h-3 text-brand-cyan" /> : <Activity className="w-3 h-3 text-brand-cyan" />}
+            {connectionType === 'bluetooth' ? 'BLE Protocol' : connectionType === 'simulated' ? 'Simulated' : 'Manual Rules'}
           </span>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-1">
@@ -187,6 +178,86 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
       <p className="text-center text-[10px] text-white/20 italic">
         * Manual heart rate entry enables cognitive rules for therapeutic intervention if biometric devices are unavailable.
       </p>
+
+      {/* Premium Pre-Pairing Modal Overlay */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md p-8 overflow-hidden border rounded-3xl glass-morphism border-brand-cyan/20 shadow-[0_30px_60px_rgba(0,242,255,0.15)]"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-cyan/20 blur-[50px]" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 transform -translate-x-1/2 translate-y-1/2 rounded-full bg-brand-mint/20 blur-[50px]" />
+
+              <div className="relative z-10 flex flex-col items-center gap-6 text-center">
+                <div className="relative flex items-center justify-center w-24 h-24 mb-2">
+                  <motion.div 
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border-2 border-brand-cyan/40"
+                  />
+                   <motion.div 
+                    animate={{ scale: [1, 2, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 2, delay: 0.5, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border border-brand-mint/30"
+                  />
+                  <div className="relative p-4 rounded-full bg-brand-cyan/10 backdrop-blur-md">
+                    <Bluetooth className="w-8 h-8 text-brand-cyan" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black tracking-tight text-white uppercase font-heading">
+                    Neural Link Initialization
+                  </h3>
+                  <p className="text-sm font-light leading-relaxed text-white/60">
+                    Entering local airspace to detect biological transponders. Ensure your device is in 
+                    <span className="font-bold text-brand-cyan border-b border-brand-cyan/30 mx-1">Pairing Mode</span>.
+                  </p>
+                </div>
+
+                <div className="w-full p-4 mt-2 text-left rounded-xl bg-white/5 border border-white/5 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Smartphone className="w-5 h-5 text-brand-mint shrink-0 mt-0.5" />
+                    <p className="text-xs text-white/50 leading-relaxed">
+                      Due to strict Web API security protocols, your device might appear as 
+                      <strong className="text-white"> "Unknown" </strong> 
+                      if it uses a proprietary companion app format. 
+                    </p>
+                  </div>
+                  <div className="pl-8">
+                     <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Expect a native browser popup next.</p>
+                  </div>
+                </div>
+
+                <div className="flex w-full gap-3 mt-4">
+                  <button 
+                    onClick={closePairingModal}
+                    className="flex-1 px-4 py-3 text-xs font-bold tracking-widest uppercase transition-all border rounded-xl text-white/40 border-white/10 hover:bg-white/5 hover:text-white"
+                  >
+                    Abort
+                  </button>
+                  <button 
+                    onClick={handleConnectRequest}
+                    className="flex-[2] relative overflow-hidden group px-4 py-3 text-xs font-black tracking-widest uppercase text-brand-teal transition-all rounded-xl shadow-[0_0_20px_rgba(0,242,255,0.2)] bg-brand-cyan hover:scale-[1.02]"
+                  >
+                    <div className="absolute inset-0 transition-transform duration-500 translate-x-[-100%] bg-white/20 group-hover:translate-x-[100%]" />
+                    {isSearching ? 'Scanning...' : 'Proceed to Pair'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
