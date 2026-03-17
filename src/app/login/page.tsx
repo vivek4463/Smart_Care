@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Mail, Lock, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Mail, Lock, Sparkles, Loader2, Chrome } from "lucide-react";
 import { authService } from "@/lib/authService";
 import { useRouter } from "next/navigation";
 
@@ -29,6 +29,18 @@ export default function LoginPage() {
     } else {
       router.push("/dashboard");
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    const { error: authError } = await authService.signInWithGoogle();
+    
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+    }
+    // Supabase will handle the redirect
   };
 
   return (
@@ -107,6 +119,27 @@ export default function LoginPage() {
                 {isLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (isSignUp ? 'Create Profile' : 'Authenticate Session')}
               </span>
               {!isLoading && <ArrowRight className="w-6 h-6 relative z-10 group-hover:translate-x-2 transition-transform" />}
+            </button>
+
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-[10px] font-black uppercase tracking-[0.3em]">
+                <span className="bg-[#0A0F14] px-4 text-white/20">OR CONTINUE WITH</span>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              className="group relative w-full py-5 bg-white/5 border border-white/10 text-white font-bold rounded-2xl flex items-center justify-center gap-4 hover:bg-white/10 hover:border-brand-cyan/30 transition-all disabled:opacity-50 overflow-hidden"
+            >
+              <Chrome className="w-5 h-5 text-brand-cyan group-hover:rotate-12 transition-transform" />
+              <span className="relative z-10 tracking-tight">
+                Google Identity Access
+              </span>
             </button>
           </form>
 
