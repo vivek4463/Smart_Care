@@ -23,6 +23,7 @@ const VoiceAssistant = dynamic(() => import("@/components/VoiceAssistant"), { ss
 const QuickActions = dynamic(() => import("@/components/dashboard/QuickActions"), { ssr: false });
 const MobileNav = dynamic(() => import("@/components/dashboard/MobileNav"), { ssr: false });
 const SessionHistory = dynamic(() => import("@/components/dashboard/SessionHistory"), { ssr: false });
+const AnalyticsOverview = dynamic(() => import("@/components/dashboard/AnalyticsOverview"), { ssr: false });
 const PremiumUpgradeModal = dynamic(() => import("@/components/dashboard/PremiumUpgradeModal"), { ssr: false });
 import { getFinalEmotion } from "@/lib/emotionFusion";
 import { sessionService } from "@/lib/sessionService";
@@ -123,7 +124,7 @@ export default function DashboardPage() {
 
       setIsAnalyzing(false);
       setShowResults(true);
-    }, 2500);
+    }, 600);
   };
 
   const startSession = () => {
@@ -361,6 +362,19 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <SessionHistory />
+              </section>
+            )}
+            
+            {activeTab === "insights" && (
+              <section className="space-y-10">
+                <div className="flex items-center gap-4">
+                  <span className="w-12 h-12 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center text-brand-mint font-black italic">A</span>
+                  <div>
+                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic leading-none">Neural Analytics</h2>
+                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">Deep-pattern behavioral insights</p>
+                  </div>
+                </div>
+                <AnalyticsOverview />
               </section>
             )}
 

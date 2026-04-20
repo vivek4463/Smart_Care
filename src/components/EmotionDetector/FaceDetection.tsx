@@ -49,7 +49,7 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
           const video = webcamRef.current.video;
 
           const detection = await faceapi
-            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
             .withFaceExpressions();
 
           if (detection) {
@@ -88,7 +88,7 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
       }
     };
 
-    interval = setInterval(runDetection, 300); // Higher frequency for better responsiveness
+    interval = setInterval(runDetection, 150); // Doubled frequency for maximum responsiveness
 
     return () => clearInterval(interval);
   }, [isLoaded, onEmotionDetected]);

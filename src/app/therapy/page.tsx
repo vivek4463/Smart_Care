@@ -15,9 +15,8 @@ export default function TherapyPage() {
   const [sessionData, setSessionData] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [timer, setTimer] = useState(180); // 3 minutes
-  const [localBpm, setLocalBpm] = useState<number | null>(null);
   const router = useRouter();
-  const displayBpm = localBpm || bpm;
+  const displayBpm = bpm;
 
   useEffect(() => {
     const data = localStorage.getItem("smart_care_session");
@@ -44,7 +43,7 @@ export default function TherapyPage() {
     if (isPlaying) {
       musicGenerator.stop();
     } else {
-      musicGenerator.start(sessionData?.face || "Neutral");
+      musicGenerator.start(sessionData?.final_emotion || sessionData?.face || "Neutral");
     }
     setIsPlaying(!isPlaying);
   };

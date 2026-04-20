@@ -258,12 +258,32 @@ class MusicGenerator {
 
   public stop() {
     Tone.Transport.stop();
-    this.loops.forEach(l => l.dispose());
+    this.loops.forEach(l => {
+      l.stop();
+      l.dispose();
+    });
     this.loops = [];
     this.isPlaying = false;
     if (this.leadSynth) this.leadSynth.releaseAll();
     if (this.padSynth) this.padSynth.releaseAll();
     if (this.bassSynth) this.bassSynth.triggerRelease();
+  }
+
+  public dispose() {
+    this.stop();
+    this.leadSynth?.dispose();
+    this.padSynth?.dispose();
+    this.bassSynth?.dispose();
+    this.reverb?.dispose();
+    this.delay?.dispose();
+    this.mainVol?.dispose();
+    
+    this.leadSynth = null;
+    this.padSynth = null;
+    this.bassSynth = null;
+    this.reverb = null;
+    this.delay = null;
+    this.mainVol = null;
   }
 
   private pickRandom<T>(arr: T[]): T {

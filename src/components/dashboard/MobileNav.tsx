@@ -10,6 +10,7 @@ export default function MobileNav({ activeTab, setActiveTab, onToggleNotificatio
 }) {
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dash' },
+    { id: 'insights', icon: BarChart2, label: 'Insights' },
     { id: 'history', icon: History, label: 'History' },
     { id: 'notifications', icon: Bell, label: 'Alerts', isToggle: true },
     { id: 'profile', icon: User, label: 'Profile' },

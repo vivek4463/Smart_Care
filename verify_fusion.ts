@@ -10,7 +10,7 @@ const testCases = [
   {
     name: "Conflict: Face(Sad) vs Text(Joy)",
     data: { face: "Sad", text: "Joy", voice: "Calm", heartRate: 72 },
-    // Face weight (0.45) > Text weight (0.35) -> Sadness
+    // Face weight (0.55) > Text weight (0.25) -> Sadness
     expected: "Sadness"
   },
   {
@@ -26,6 +26,16 @@ const testCases = [
   {
     name: "Text Dominance over Voice",
     data: { face: "", text: "Joy", voice: "Unsettled", heartRate: 70 },
+    expected: "Joy"
+  },
+  {
+    name: "New Voice Mapping: Stressed",
+    data: { face: "", text: "Neutral", voice: "Stressed", heartRate: 70 },
+    expected: "Anxiety"
+  },
+  {
+    name: "New Voice Mapping: Excited",
+    data: { face: "", text: "Neutral", voice: "Excited", heartRate: 70 },
     expected: "Joy"
   }
 ];

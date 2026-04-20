@@ -22,8 +22,8 @@ export interface FusionResult {
 }
 
 const WEIGHTS = {
-  face: 0.45,
-  text: 0.35,
+  face: 0.55,
+  text: 0.25,
   voice: 0.20
 };
 
@@ -32,6 +32,7 @@ const CORE_EMOTION_MAP: Record<string, string> = {
   "Happy": "Joy",
   "Sad": "Sadness",
   "Angry": "Anger",
+  "Fear": "Fear",
   "Fearful": "Fear",
   "Disgusted": "Aversion",
   "Surprised": "Awe",
@@ -47,10 +48,12 @@ const CORE_EMOTION_MAP: Record<string, string> = {
   "Anxious": "Anxiety",
   "Awe": "Awe",
   "Love": "Joy",
+  "Excited": "Joy",
 
   // Voice
   "Energetic": "Joy",
   "Passionate": "Joy",
+  "Stressed": "Anxiety",
   "Unsettled": "Anxiety",
   "Whispering": "Neutral",
   "Calm": "Neutral",

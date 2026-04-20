@@ -18,10 +18,13 @@ export default function AnalysisControl({ onAnalyze, isAnalyzing }: {
       >
         <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
         {isAnalyzing ? (
-          <>
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <span className="tracking-tighter uppercase italic">Synthesizing...</span>
-          </>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <span className="tracking-tighter uppercase italic animate-pulse">Converging Signals...</span>
+            </div>
+            <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.4em] animate-pulse">Neural Weighting Active</span>
+          </div>
         ) : (
           <>
             <Brain className="w-8 h-8 group-hover:rotate-12 transition-transform" />

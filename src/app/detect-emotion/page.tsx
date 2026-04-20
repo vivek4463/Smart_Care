@@ -11,6 +11,7 @@ const FaceDetection = dynamic(() => import("@/components/EmotionDetector/FaceDet
 const VoiceDetection = dynamic(() => import("@/components/EmotionDetector/VoiceDetection"), { ssr: false });
 const TextAnalysis = dynamic(() => import("@/components/EmotionDetector/TextAnalysis"), { ssr: false });
 const HeartRateMonitor = dynamic(() => import("@/components/EmotionDetector/HeartRateMonitor"), { ssr: false });
+import { getFinalEmotion } from "@/lib/emotionFusion";
 
 const STEPS = ["introduction", "face", "voice", "text", "biometric", "summary"];
 
@@ -41,7 +42,13 @@ export default function DetectEmotionPage() {
   };
 
   const handleFinish = () => {
-    localStorage.setItem("smart_care_session", JSON.stringify(results));
+    const fusion = getFinalEmotion(results);
+    const finalSessionData = {
+      ...results,
+      final_emotion: fusion.finalEmotion,
+      confidence: fusion.confidence
+    };
+    localStorage.setItem("smart_care_session", JSON.stringify(finalSessionData));
     router.push("/therapy");
   };
 

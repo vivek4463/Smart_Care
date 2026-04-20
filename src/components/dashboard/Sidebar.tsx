@@ -20,6 +20,7 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, onToggleNot
 }) {
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'insights', icon: BarChart2, label: 'Neural Insights' },
     { id: 'history', icon: History, label: 'Emotion History' },
     { id: 'profile', icon: User, label: 'Profile' },
   ];
