@@ -122,8 +122,8 @@ export default function AnalyticsOverview() {
 
         <div className="h-48 w-full flex items-end justify-between gap-2 px-2">
           {weeklyData.map((data, i) => (
-            <div key={data.day} className="flex-1 flex flex-col items-center gap-3 group">
-              <div className="w-full relative flex flex-col items-center">
+            <div key={data.day} className="flex-1 h-full flex flex-col items-center gap-3 group">
+              <div className="w-full h-full relative flex flex-col items-center justify-end">
                  <motion.div 
                   initial={{ height: 0 }}
                   animate={{ height: `${data.value}%` }}

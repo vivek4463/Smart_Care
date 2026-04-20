@@ -76,7 +76,11 @@ export default function FaceDetection({ onEmotionDetected }: { onEmotionDetected
             setConfidence(Math.round(score * 100));
 
             if (onEmotionDetected && score > 0.55) {
-              onEmotionDetected({ emotion: mappedEmotion, confidence: score });
+              onEmotionDetected({ 
+                emotion: mappedEmotion, 
+                confidence: score,
+                timestamp: Date.now() 
+              });
             }
           } else {
             setEmotion("Scanning...");

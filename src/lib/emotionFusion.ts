@@ -1,6 +1,7 @@
 export interface EmotionSignal {
   emotion: string;
   confidence: number;
+  timestamp?: number;
 }
 
 export interface EmotionData {
@@ -8,6 +9,7 @@ export interface EmotionData {
   voice: string | EmotionSignal;
   text: string | EmotionSignal;
   heartRate: number | string;
+  heartRateTimestamp?: number;
 }
 
 export interface FusionResult {
@@ -60,11 +62,15 @@ const CORE_EMOTION_MAP: Record<string, string> = {
   "Silence": "Neutral"
 };
 
+const SIGNAL_TTL = 30000; // 30 seconds signal validity
+
 export function getFinalEmotion(data: EmotionData): FusionResult {
+  const now = Date.now();
   const hr = typeof data.heartRate === 'number' ? data.heartRate : 0;
+  const isHrStale = data.heartRateTimestamp ? (now - data.heartRateTimestamp > SIGNAL_TTL) : false;
   
-  // 1. Critical Biometric Alerts
-  if (hr > 110) {
+  // 1. Critical Biometric Alerts (only if not stale)
+  if (hr > 110 && !isHrStale) {
     return {
       finalEmotion: "Panic/Distress",
       confidence: 95,
@@ -81,6 +87,16 @@ export function getFinalEmotion(data: EmotionData): FusionResult {
   const scores: Record<string, number> = {};
 
   const addScore = (modality: keyof typeof WEIGHTS, signal: string | EmotionSignal) => {
+    if (!signal) return;
+    
+    // Check for expiration
+    if (typeof signal !== 'string' && signal.timestamp) {
+      if (Date.now() - signal.timestamp > SIGNAL_TTL) {
+        console.log(`[Signal Rejected] ${modality} data expired.`);
+        return;
+      }
+    }
+
     const rawLabel = typeof signal === 'string' ? signal : signal.emotion;
     const signalConf = typeof signal === 'string' ? 1 : signal.confidence;
     
@@ -103,6 +119,20 @@ export function getFinalEmotion(data: EmotionData): FusionResult {
       finalEmotion = emotion;
     }
   });
+
+  // Handle case where all signals expired
+  if (maxScore === 0) {
+    return {
+      finalEmotion: "Neutral",
+      confidence: 50,
+      explanation: {
+        face: "Signal Expired",
+        voice: "Signal Expired",
+        text: "Signal Expired",
+        heartRate: "Inactive"
+      }
+    };
+  }
 
   let confidence = Math.round(maxScore * 100);
   if (maxScore < 0.2) confidence = 50; 

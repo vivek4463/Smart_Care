@@ -37,6 +37,16 @@ const testCases = [
     name: "New Voice Mapping: Excited",
     data: { face: "", text: "Neutral", voice: "Excited", heartRate: 70 },
     expected: "Joy"
+  },
+  {
+    name: "Signal Expiration: Old Joy vs New Neutral",
+    data: { 
+      face: { emotion: "Happy", confidence: 0.9, timestamp: Date.now() - 40000 }, // Expired
+      text: "Neutral", 
+      voice: "Neutral", 
+      heartRate: 70 
+    },
+    expected: "Neutral"
   }
 ];
 

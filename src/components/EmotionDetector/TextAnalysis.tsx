@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, BrainCircuit } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { detectCrisis } from "@/lib/clinicalSafety";
@@ -18,6 +18,11 @@ export default function TextAnalysis({
   const [engine, setEngine] = useState<string>("NEURAL NLP");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCrisisModalOpen, setIsCrisisModalOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
 
   const analyzeSentiment = async () => {
 
@@ -26,6 +31,11 @@ export default function TextAnalysis({
     if (detectCrisis(text)) {
       setIsCrisisModalOpen(true);
     }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     setIsAnalyzing(true);
 
@@ -36,7 +46,8 @@ export default function TextAnalysis({
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text }),
+        signal: abortControllerRef.current.signal
       });
 
       const data = await res.json();
@@ -70,7 +81,15 @@ export default function TextAnalysis({
         surprise: "Surprised"
       };
 
-      const finalEmotion = emotionMap[label] || "Neutral";
+      let finalEmotion = emotionMap[label] || "Neutral";
+
+      // Refinement: If logic is NEGATIVE but contains anger keywords, promote to Angry
+      if (finalEmotion === "Sad") {
+        const angerKeywords = ["angry", "mad", "hate", "frustrated", "annoyed", "furious", "stupid"];
+        if (angerKeywords.some(word => text.toLowerCase().includes(word))) {
+          finalEmotion = "Angry";
+        }
+      }
 
       setEmotion(finalEmotion);
 
@@ -78,8 +97,8 @@ export default function TextAnalysis({
         onTextEmotionDetected(finalEmotion);
       }
 
-    } catch (err) {
-
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
       console.error("Neural NLP Error. Accessing Lexical Guardrails.", err);
 
       const input = text.toLowerCase();

@@ -6,6 +6,7 @@ type ConnectionType = 'none' | 'manual' | 'simulated';
 
 interface BiometricContextType {
   bpm: number | null;
+  lastUpdated: number | null;
   connectionType: ConnectionType;
   isConnected: boolean;
   disconnect: () => void;
@@ -17,6 +18,7 @@ const BiometricContext = createContext<BiometricContextType | undefined>(undefin
 
 export function BiometricProvider({ children }: { children: React.ReactNode }) {
   const [bpm, setBpm] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [connectionType, setConnectionType] = useState<ConnectionType>('none');
   const simulationIntervalRef = useRef<any>(null);
 
@@ -31,6 +33,7 @@ export function BiometricProvider({ children }: { children: React.ReactNode }) {
   const setBpmManual = (val: number) => {
     setConnectionType('manual');
     setBpm(val);
+    setLastUpdated(Date.now());
   };
 
   const disconnect = () => {
@@ -40,6 +43,7 @@ export function BiometricProvider({ children }: { children: React.ReactNode }) {
     }
     setConnectionType('none');
     setBpm(null);
+    setLastUpdated(null);
   };
 
   const simulate = () => {
@@ -48,12 +52,14 @@ export function BiometricProvider({ children }: { children: React.ReactNode }) {
     simulationIntervalRef.current = setInterval(() => {
       const newBpm = 70 + Math.floor(Math.random() * 15);
       setBpm(newBpm);
+      setLastUpdated(Date.now());
     }, 5000);
   };
 
   return (
     <BiometricContext.Provider value={{ 
       bpm, 
+      lastUpdated,
       connectionType, 
       isConnected,
       disconnect, 

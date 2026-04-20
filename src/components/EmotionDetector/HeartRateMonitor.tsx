@@ -1,13 +1,12 @@
-"use client";
-
-import { useState } from "react";
-import { Watch, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBiometrics } from "@/context/BiometricContext";
+import { useEffect, useState, useRef } from "react";
+import { Watch, Activity } from "lucide-react";
 
 export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateDetected?: (bpm: number) => void }) {
   const { 
     bpm, 
+    lastUpdated,
     connectionType, 
     isConnected, 
     disconnect, 
@@ -17,6 +16,16 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
 
   const [manualBpm, setManualBpm] = useState<string>("");
   const [advice, setAdvice] = useState<string>("");
+  const [isStale, setIsStale] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (lastUpdated) {
+        setIsStale(Date.now() - lastUpdated > 30000);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +89,20 @@ export default function HeartRateMonitor({ onHeartRateDetected }: { onHeartRateD
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center gap-4"
               >
-                <div className="text-7xl font-black text-brand-cyan flex items-baseline gap-2">
+                <div className={`text-7xl font-black flex items-baseline gap-2 transition-opacity ${isStale ? 'text-white/20' : 'text-brand-cyan'}`}>
                   {bpm || "--"}
                   <span className="text-sm font-medium text-white/40 uppercase tracking-widest">BPM</span>
                 </div>
-                <Activity className="w-12 h-12 text-brand-mint animate-pulse" />
+                {isStale && (
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-[8px] font-black text-red-500 uppercase tracking-[0.3em] absolute -bottom-6"
+                  >
+                    Signal Stale - Recalibrate
+                  </motion.span>
+                )}
+                <Activity className={`w-12 h-12 animate-pulse ${isStale ? 'text-white/10' : 'text-brand-mint'}`} />
                 <button 
                   onClick={disconnect}
                   className="mt-4 px-4 py-2 border border-brand-cyan/30 rounded-full text-[10px] uppercase tracking-widest text-brand-cyan hover:bg-brand-cyan/10 transition-colors"

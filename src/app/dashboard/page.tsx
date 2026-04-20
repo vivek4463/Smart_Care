@@ -26,6 +26,7 @@ const SessionHistory = dynamic(() => import("@/components/dashboard/SessionHisto
 const AnalyticsOverview = dynamic(() => import("@/components/dashboard/AnalyticsOverview"), { ssr: false });
 const PremiumUpgradeModal = dynamic(() => import("@/components/dashboard/PremiumUpgradeModal"), { ssr: false });
 import { getFinalEmotion } from "@/lib/emotionFusion";
+import { useBiometrics } from "@/context/BiometricContext";
 import { sessionService } from "@/lib/sessionService";
 
 export default function DashboardPage() {
@@ -58,6 +59,8 @@ export default function DashboardPage() {
     } as Record<string, number>
   });
 
+  const { bpm, lastUpdated: heartRateTimestamp } = useBiometrics();
+
   useEffect(() => {
     const fetchUser = async () => {
       const currentUser = await authService.getCurrentUser();
@@ -84,7 +87,11 @@ export default function DashboardPage() {
     setIsAnalyzing(true);
     
     setTimeout(async () => {
-      const result = getFinalEmotion(detectionData);
+      const result = getFinalEmotion({
+        ...detectionData,
+        heartRate: bpm || "N/A",
+        heartRateTimestamp: heartRateTimestamp || undefined
+      });
       
       const emotions = ["Joy", "Sadness", "Anger", "Fear", "Anxiety", "Neutral", "Awe"];
       const probabilities: Record<string, number> = {};
